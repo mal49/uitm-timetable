@@ -134,6 +134,8 @@ async function getMainPageInfo(): Promise<MainPageInfo> {
     }
   }
 
+  console.log("[scraper] submissionPath:", submissionPath || "(fallback index.cfm)");
+
   return { hiddenInputs, submissionPath, cookieHeader };
 }
 
@@ -152,9 +154,11 @@ async function searchSubjects(
   const formData = new URLSearchParams({
     ...info.hiddenInputs,
     search_campus: req.campus,
-    search_faculty: req.faculty,
+    search_faculty: req.faculty ?? "",
     search_course: req.course.toUpperCase(),
   });
+
+  console.log("[scraper] POST", targetUrl, "campus:", req.campus, "course:", req.course);
 
   const res = await http.post<string>(targetUrl, formData.toString(), {
     headers: {
@@ -166,6 +170,11 @@ async function searchSubjects(
   });
 
   const html = res.data as string;
+  console.log("[scraper] search response length:", html.length);
+  if (html.length < 2000) {
+    const msg = html.replace(/\s+/g, " ").trim().slice(0, 300);
+    console.log("[scraper] short response (no results):", msg);
+  }
 
   // Remove script tags to make HTML parsing cleaner
   const $ = cheerio.load(html);
@@ -173,11 +182,20 @@ async function searchSubjects(
 
   const results: SearchResult[] = [];
 
-  // Find the results table — look for rows containing "View" anchor links
+  // Find the results table — look for rows containing anchor links to timetable pages.
+  // Match anchors by text ("view", "lihat") OR by href containing ".cfm".
   $("table tr").each((_, row) => {
     const $row = $(row);
+
     const viewAnchor = $row.find('a[href]').filter((_, el) => {
-      return $(el).text().trim().toLowerCase() === "view";
+      const text = $(el).text().trim().toLowerCase();
+      const href = $(el).attr("href") ?? "";
+      return (
+        text === "view" ||
+        text === "lihat" ||
+        text.includes("view") ||
+        href.includes(".cfm")
+      );
     }).first();
 
     if (!viewAnchor.length) return;
@@ -185,25 +203,40 @@ async function searchSubjects(
     const href = viewAnchor.attr("href") ?? "";
     if (!href) return;
 
-    // Subject text is typically in the first or second td
+    // Collect all cell texts from this row, excluding the anchor cell itself
     const cells = $row.find("td");
     let subjectText = "";
     cells.each((_, td) => {
       const text = $(td).text().replace(/\s+/g, " ").trim();
-      if (text && text.toLowerCase() !== "view" && text.length > 1) {
-        subjectText = text;
-        return false; // break
+      const lower = text.toLowerCase();
+      // Skip empty, pure-numeric (row numbers), link-text, or short cells
+      if (
+        !text ||
+        text.length <= 1 ||
+        /^\d+$/.test(text) ||
+        lower === "view" ||
+        lower === "lihat" ||
+        lower.includes("view timetable")
+      ) {
+        return;
       }
+      subjectText = text;
+      return false; // take the first meaningful cell
     });
 
-    // Normalize subject: trim, remove dots
     const subject = subjectText.replace(/\./g, "").trim();
-    const path = href.replace(/^\/estudent\/class_timetable\//, "").replace(/^\//, "");
+    const path = href
+      .replace(/^https?:\/\/simsweb4\.uitm\.edu\.my\/estudent\/class_timetable\//, "")
+      .replace(/^\/estudent\/class_timetable\//, "")
+      .replace(/^\//, "");
 
     if (path) {
+      console.log("[scraper] subject:", subject || "(unknown)", "path:", path);
       results.push({ subject, path });
     }
   });
+
+  console.log("[scraper] results found:", results.length);
 
   return results;
 }
@@ -223,7 +256,10 @@ async function fetchSubjectTimetable(
     responseType: "text",
   });
 
-  const $ = cheerio.load(res.data as string);
+  const rawHtml = res.data as string;
+  console.log("[scraper] timetable response length:", rawHtml.length);
+
+  const $ = cheerio.load(rawHtml);
   $("script").remove();
 
   const grouped: GroupedTimetable = {};
@@ -248,10 +284,15 @@ async function fetchSubjectTimetable(
       lecturer: findColIndex(headerCells, ["lecturer", "pensyarah", "instructor", "staff"]),
     };
 
-    // Skip tables that don't look like timetable data
+    // "day time" combined column: a single column matched by both "day" and "time" keywords
+    const isDayTimeCombined = colIdx.day >= 0 && colIdx.day === colIdx.time;
+
     const hasRequiredCols =
       colIdx.day >= 0 &&
       (colIdx.time >= 0 || (colIdx.start >= 0 && colIdx.end >= 0));
+
+    console.log("[scraper] headers:", headerCells, "| colIdx:", colIdx);
+
     if (!hasRequiredCols) return;
 
     rows.slice(1).forEach((row) => {
@@ -262,8 +303,21 @@ async function fetchSubjectTimetable(
 
       if (cells.length < 2) return;
 
-      const rawDay = colIdx.day >= 0 ? (cells[colIdx.day] ?? "") : "";
-      const day = normalizeDay(rawDay);
+      const rawDayTime = cells[colIdx.day] ?? "";
+
+      // When the column is combined ("day time"), the cell holds e.g. "MONDAY 08:00 - 10:00"
+      // or "ISNIN 08:00 - 10:00". We split on the first space after the day token.
+      let rawDayOnly = rawDayTime;
+      let rawTimeOnly = rawDayTime;
+      if (isDayTimeCombined) {
+        const spaceIdx = rawDayTime.search(/\s+\d/);
+        if (spaceIdx > 0) {
+          rawDayOnly = rawDayTime.slice(0, spaceIdx).trim();
+          rawTimeOnly = rawDayTime.slice(spaceIdx).trim();
+        }
+      }
+
+      const day = normalizeDay(rawDayOnly);
       if (!day) return;
 
       let start = "";
@@ -272,7 +326,8 @@ async function fetchSubjectTimetable(
         start = normalizeTime(cells[colIdx.start] ?? "");
         end = normalizeTime(cells[colIdx.end] ?? "");
       } else if (colIdx.time >= 0) {
-        const parsed = parseTimeRange(cells[colIdx.time] ?? "");
+        const timeSource = isDayTimeCombined ? rawTimeOnly : (cells[colIdx.time] ?? "");
+        const parsed = parseTimeRange(timeSource);
         start = parsed.start;
         end = parsed.end;
       }
@@ -312,12 +367,33 @@ async function fetchSubjectTimetable(
 // Public entry point — full search flow
 // ---------------------------------------------------------------------------
 
+// All three are administratively the same Shah Alam campus but categorised
+// differently in the UiTM portal. Students often don't know which bucket
+// their course falls under, so we try all three before giving up.
+const SHAH_ALAM_COURSE_TYPES = ["HEP", "APB", "CITU"] as const;
+
 export async function searchTimetable(req: SearchRequest): Promise<SearchResponse> {
-  // Step 3: get session info
+  // Step 3: get session info (single session reused across retries)
   const info = await getMainPageInfo();
 
-  // Step 4: search subjects
-  const results = await searchSubjects(info, req);
+  // Step 4: search subjects — with automatic fallback across Shah Alam types
+  let results = await searchSubjects(info, req);
+  let effectiveCampus = req.campus;
+
+  if (
+    results.length === 0 &&
+    (SHAH_ALAM_COURSE_TYPES as readonly string[]).includes(req.campus)
+  ) {
+    for (const altCampus of SHAH_ALAM_COURSE_TYPES) {
+      if (altCampus === req.campus) continue;
+      console.log("[scraper] retrying with campus:", altCampus);
+      results = await searchSubjects(info, { ...req, campus: altCampus });
+      if (results.length > 0) {
+        effectiveCampus = altCampus;
+        break;
+      }
+    }
+  }
 
   if (results.length === 0) {
     return {
@@ -327,6 +403,8 @@ export async function searchTimetable(req: SearchRequest): Promise<SearchRespons
     };
   }
 
+  console.log("[scraper] found under campus:", effectiveCampus);
+
   // Step 5: fetch timetable for the first matching result
   const first = results[0]!;
   const grouped = await fetchSubjectTimetable(first.path, info.cookieHeader);
@@ -334,9 +412,16 @@ export async function searchTimetable(req: SearchRequest): Promise<SearchRespons
   // Flatten grouped data into entries (section = group name)
   const entries: TimetableEntry[] = Object.values(grouped).flat();
 
+  // Use the parsed subject name; fall back to the course code if it's empty or
+  // ended up as a bare number (e.g. a row-number cell was picked up instead).
+  const subjectName =
+    first.subject && !/^\d+$/.test(first.subject)
+      ? first.subject
+      : req.course.toUpperCase();
+
   return {
     course: req.course.toUpperCase(),
-    subject: first.subject,
+    subject: subjectName,
     entries,
   };
 }
@@ -388,7 +473,16 @@ const DAY_MAP: Record<string, string> = {
 
 function normalizeDay(raw: string): string {
   const key = raw.trim().toLowerCase();
-  return DAY_MAP[key] ?? DAY_MAP[key.slice(0, 3)] ?? "";
+  if (DAY_MAP[key]) return DAY_MAP[key]!;
+  // Check if any known day token is a prefix of (or equals) the first word
+  // Handles "MONDAY 08:00-10:00" → firstWord = "monday"
+  // and Malay "ISNIN 08:00-10:00" → firstWord = "isnin"
+  const firstWord = key.split(/[\s,./\n]/)[0] ?? "";
+  if (DAY_MAP[firstWord]) return DAY_MAP[firstWord]!;
+  // English 3-char abbreviations: "mon", "tue", "wed", "thu", "fri", "sat", "sun"
+  if (DAY_MAP[firstWord.slice(0, 3)]) return DAY_MAP[firstWord.slice(0, 3)]!;
+  if (DAY_MAP[key.slice(0, 3)]) return DAY_MAP[key.slice(0, 3)]!;
+  return "";
 }
 
 function normalizeTime(raw: string): string {

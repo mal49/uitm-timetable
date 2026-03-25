@@ -1,9 +1,8 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { AlertTriangle, MapPin, User, Clock, ChevronDown, Filter, Search, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { getSubjectColor, WEEKDAYS, HOUR_START, HOUR_END } from "@/lib/constants";
+import { MapPin, User, Clock, ChevronDown, Filter, Search, X } from "lucide-react";
+import { getSubjectColor, WEEKDAYS } from "@/lib/constants";
 import type { TimetableEntry } from "@/lib/types";
 
 interface TimetableGridProps {
@@ -11,182 +10,127 @@ interface TimetableGridProps {
   course: string;
 }
 
-interface PlacedEntry extends TimetableEntry {
-  startMinutes: number;
-  durationMinutes: number;
-  isClash: boolean;
-}
+export function TimetableGrid({ entries, course }: TimetableGridProps) {
+  const activeDays = WEEKDAYS.filter((day) => entries.some((e) => e.day === day));
+  const sections = [...new Set(entries.map((e) => e.section).filter(Boolean))].sort();
 
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return (h ?? 0) * 60 + (m ?? 0);
-}
-
-function detectClashes(entries: TimetableEntry[]): Map<TimetableEntry, boolean> {
-  const clashMap = new Map<TimetableEntry, boolean>();
-  for (let i = 0; i < entries.length; i++) {
-    for (let j = i + 1; j < entries.length; j++) {
-      const a = entries[i];
-      const b = entries[j];
-      if (!a || !b || a.day !== b.day) continue;
-      const aStart = timeToMinutes(a.start);
-      const aEnd = timeToMinutes(a.end);
-      const bStart = timeToMinutes(b.start);
-      const bEnd = timeToMinutes(b.end);
-      if (aStart < bEnd && aEnd > bStart) {
-        clashMap.set(a, true);
-        clashMap.set(b, true);
-      }
+  // cell lookup: "section|day" → entries
+  const cellMap = new Map<string, TimetableEntry[]>();
+  for (const section of sections) {
+    for (const day of activeDays) {
+      const key = `${section}|${day}`;
+      cellMap.set(
+        key,
+        entries.filter((e) => e.section === section && e.day === day)
+      );
     }
   }
-  return clashMap;
-}
 
-const TOTAL_HOURS = HOUR_END - HOUR_START;
-const TOTAL_MINUTES = TOTAL_HOURS * 60;
-
-const HOUR_LABELS = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => {
-  const h = HOUR_START + i;
-  return `${String(h).padStart(2, "0")}:00`;
-});
-
-export function TimetableGrid({ entries, course }: TimetableGridProps) {
-  const clashMap = detectClashes(entries);
-
-  const activeDays = WEEKDAYS.filter((day) =>
-    entries.some((e) => e.day === day)
-  );
-  const displayDays = activeDays.length > 0 ? activeDays : [...WEEKDAYS];
-
-  const entriesByDay = new Map<string, PlacedEntry[]>();
-  for (const day of displayDays) {
-    const dayEntries = entries
-      .filter((e) => e.day === day)
-      .map((e) => ({
-        ...e,
-        startMinutes: timeToMinutes(e.start) - HOUR_START * 60,
-        durationMinutes: timeToMinutes(e.end) - timeToMinutes(e.start),
-        isClash: clashMap.has(e),
-      }));
-    entriesByDay.set(day, dayEntries);
+  if (sections.length === 0) {
+    return (
+      <div className="rounded-xl border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
+        No sessions to display.
+      </div>
+    );
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
-      <div
-        className="grid min-w-[640px]"
-        style={{ gridTemplateColumns: `4rem repeat(${displayDays.length}, 1fr)` }}
-      >
-        {/* Header row */}
-        <div className="sticky left-0 bg-card z-10 border-b border-r border-border" />
-        {displayDays.map((day) => (
-          <div
-            key={day}
-            className="bg-card border-b border-r border-border last:border-r-0 px-3 py-2.5 text-center"
-          >
-            <span className="text-sm font-semibold text-foreground">{day.slice(0, 3)}</span>
-            <span className="hidden sm:inline text-sm font-semibold text-foreground">
-              {day.slice(3)}
-            </span>
-          </div>
-        ))}
-
-        {/* Time column + day columns */}
-        <div className="sticky left-0 bg-card z-10 border-r border-border">
-          {HOUR_LABELS.map((label) => (
-            <div
-              key={label}
-              className="h-14 border-b border-border last:border-b-0 flex items-start justify-end pr-2 pt-1"
-            >
-              <span className="text-[10px] text-muted-foreground font-mono">{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {displayDays.map((day) => {
-          const dayEntries = entriesByDay.get(day) ?? [];
-          return (
-            <div
-              key={day}
-              className="relative border-r border-border last:border-r-0"
-              style={{ height: `${TOTAL_HOURS * 3.5}rem` }}
-            >
-              {/* Hour grid lines */}
-              {HOUR_LABELS.map((label) => (
-                <div
-                  key={label}
-                  className="absolute w-full border-b border-border/40"
-                  style={{
-                    top: `${(HOUR_LABELS.indexOf(label) / TOTAL_HOURS) * 100}%`,
-                  }}
-                />
+    <div className="rounded-xl border border-border overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[480px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/40">
+              <th className="sticky left-0 z-10 bg-muted/40 text-left px-4 py-3 font-semibold text-muted-foreground text-[11px] uppercase tracking-widest w-28 border-r border-border">
+                Group
+              </th>
+              {activeDays.map((day) => (
+                <th
+                  key={day}
+                  className="px-3 py-3 text-center font-semibold text-foreground text-[11px] uppercase tracking-widest border-r border-border last:border-r-0 min-w-[120px]"
+                >
+                  <span className="sm:hidden">{day.slice(0, 3)}</span>
+                  <span className="hidden sm:inline">{day}</span>
+                </th>
               ))}
+            </tr>
+          </thead>
 
-              {/* Class entries */}
-              {dayEntries.map((entry, idx) => {
-                const color = getSubjectColor(entry.section || course);
-                const topPct = (entry.startMinutes / TOTAL_MINUTES) * 100;
-                const heightPct = (entry.durationMinutes / TOTAL_MINUTES) * 100;
+          <tbody>
+            {sections.map((section, rowIdx) => {
+              const color = getSubjectColor(section || course);
+              const isEven = rowIdx % 2 === 0;
 
-                return (
-                  <div
-                    key={`${entry.section}-${entry.start}-${idx}`}
-                    className={`absolute left-1 right-1 rounded-md border px-2 py-1.5 overflow-hidden transition-shadow hover:shadow-md ${color.bg} ${color.border} ${color.text} ${
-                      entry.isClash ? "ring-2 ring-destructive ring-offset-1" : ""
+              return (
+                <tr
+                  key={section}
+                  className="border-b border-border last:border-b-0 group/row"
+                >
+                  {/* Section label */}
+                  <td
+                    className={`sticky left-0 z-10 border-r border-border px-3 py-3 transition-colors ${
+                      isEven ? "bg-card group-hover/row:bg-muted/30" : "bg-muted/20 group-hover/row:bg-muted/40"
                     }`}
-                    style={{
-                      top: `${topPct}%`,
-                      height: `${heightPct}%`,
-                      minHeight: "2rem",
-                    }}
-                    title={`${course} ${entry.section} — ${entry.start}–${entry.end} @ ${entry.venue}`}
                   >
-                    <p className="text-[11px] font-bold leading-tight truncate">
-                      {course}
-                      {entry.section ? ` · ${entry.section}` : ""}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full shrink-0 border ${color.bg} ${color.border}`}
+                      />
+                      <span className={`font-mono font-bold text-xs ${color.text}`}>
+                        {section}
+                      </span>
+                    </div>
+                  </td>
 
-                    {entry.durationMinutes >= 60 && (
-                      <>
-                        <p className="flex items-center gap-0.5 text-[10px] mt-0.5 opacity-80 truncate">
-                          <Clock className="h-2.5 w-2.5 shrink-0" />
-                          {entry.start}–{entry.end}
-                        </p>
-                        <p className="flex items-center gap-0.5 text-[10px] opacity-80 truncate">
-                          <MapPin className="h-2.5 w-2.5 shrink-0" />
-                          {entry.venue}
-                        </p>
-                        {entry.lecturer && (
-                          <p className="flex items-center gap-0.5 text-[10px] opacity-70 truncate">
-                            <User className="h-2.5 w-2.5 shrink-0" />
-                            {entry.lecturer}
-                          </p>
+                  {/* Day cells */}
+                  {activeDays.map((day) => {
+                    const key = `${section}|${day}`;
+                    const slotEntries = cellMap.get(key) ?? [];
+
+                    return (
+                      <td
+                        key={day}
+                        className={`px-2 py-2 border-r border-border last:border-r-0 align-top transition-colors ${
+                          isEven ? "bg-card group-hover/row:bg-muted/30" : "bg-muted/20 group-hover/row:bg-muted/40"
+                        }`}
+                      >
+                        {slotEntries.length === 0 ? (
+                          <div className="h-8 flex items-center justify-center">
+                            <span className="text-muted-foreground/20 text-base select-none">·</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            {slotEntries.map((entry, i) => (
+                              <div
+                                key={i}
+                                className={`rounded-lg border px-2.5 py-2 ${color.bg} ${color.border} ${color.text}`}
+                              >
+                                <div className="flex items-center gap-1 font-semibold text-[11px] leading-tight">
+                                  <Clock className="h-2.5 w-2.5 shrink-0 opacity-60" />
+                                  <span>{entry.start}–{entry.end}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] opacity-70 mt-1 truncate">
+                                  <MapPin className="h-2.5 w-2.5 shrink-0" />
+                                  <span className="truncate">{entry.venue}</span>
+                                </div>
+                                {entry.lecturer && (
+                                  <div className="flex items-center gap-1 text-[10px] opacity-60 mt-0.5 truncate">
+                                    <User className="h-2.5 w-2.5 shrink-0" />
+                                    <span className="truncate">{entry.lecturer}</span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         )}
-                      </>
-                    )}
-
-                    {entry.isClash && (
-                      <div className="absolute top-1 right-1">
-                        <AlertTriangle className="h-3 w-3 text-destructive" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-
-      {clashMap.size > 0 && (
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-destructive/10 border-t border-border text-sm text-destructive">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>
-            <strong>{clashMap.size / 2} clash{clashMap.size / 2 !== 1 ? "es" : ""}</strong>{" "}
-            detected — overlapping sessions are highlighted in red.
-          </span>
-        </div>
-      )}
     </div>
   );
 }
@@ -194,19 +138,22 @@ export function TimetableGrid({ entries, course }: TimetableGridProps) {
 export function TimetableGridSkeleton() {
   return (
     <div className="rounded-xl border border-border overflow-hidden animate-pulse">
-      <div className="grid grid-cols-6 border-b border-border">
-        <div className="h-10 bg-muted" />
+      <div className="border-b border-border bg-muted/40 grid grid-cols-6">
+        <div className="h-10 border-r border-border" />
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-10 bg-muted border-l border-border" />
+          <div key={i} className="h-10 border-r border-border last:border-r-0" />
         ))}
       </div>
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="grid grid-cols-6 border-b border-border last:border-b-0">
-          <div className="h-14 bg-muted/50" />
+          <div className="h-16 border-r border-border px-3 py-3 flex items-center gap-2">
+            <div className="h-2.5 w-2.5 rounded-full bg-muted" />
+            <div className="h-3 w-14 rounded bg-muted" />
+          </div>
           {Array.from({ length: 5 }).map((_, j) => (
-            <div key={j} className="h-14 bg-card border-l border-border">
-              {Math.random() > 0.75 && (
-                <div className="m-1 h-10 rounded bg-muted" />
+            <div key={j} className="h-16 border-r border-border last:border-r-0 p-2">
+              {(i + j) % 3 !== 0 && (
+                <div className="h-full rounded-lg bg-muted/60" />
               )}
             </div>
           ))}
@@ -215,6 +162,10 @@ export function TimetableGridSkeleton() {
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Legend / filter
+// ---------------------------------------------------------------------------
 
 interface TimetableLegendProps {
   entries: TimetableEntry[];
@@ -257,7 +208,6 @@ export function TimetableLegend({
 
   return (
     <div className="flex items-center gap-3 flex-wrap" ref={containerRef}>
-      {/* Filter button */}
       <div className="relative">
         <button
           onClick={() => setOpen((v) => !v)}
@@ -274,7 +224,6 @@ export function TimetableLegend({
 
         {open && (
           <div className="absolute left-0 top-full mt-1.5 z-30 w-72 rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
-            {/* Search */}
             <div className="flex items-center gap-2 border-b border-border px-3 py-2">
               <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <input
@@ -291,7 +240,6 @@ export function TimetableLegend({
               )}
             </div>
 
-            {/* Actions */}
             <div className="flex items-center justify-between border-b border-border px-3 py-1.5 bg-muted/40">
               <span className="text-xs text-muted-foreground">
                 {hasFilter ? `${selectedSections.size} selected` : "All shown"}
@@ -314,7 +262,6 @@ export function TimetableLegend({
               </div>
             </div>
 
-            {/* List */}
             <div className="max-h-60 overflow-y-auto py-1">
               {filtered.length === 0 ? (
                 <p className="px-3 py-4 text-center text-xs text-muted-foreground">No groups match</p>
@@ -346,7 +293,6 @@ export function TimetableLegend({
         )}
       </div>
 
-      {/* Active filter pills */}
       {hasFilter && (
         <div className="flex flex-wrap gap-1.5">
           {[...selectedSections].map((section) => {
