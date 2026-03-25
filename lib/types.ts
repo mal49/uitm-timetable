@@ -1,8 +1,29 @@
-export interface TimetableRequest {
-  campus: string;
-  faculty: string;
-  course: string;
+// ---------- Campus & Faculty ----------
+
+export interface Campus {
+  code: string;
+  fullname: string;
 }
+
+export interface Faculty {
+  code: string;
+  fullname: string;
+}
+
+// ---------- Scraper internals ----------
+
+export interface MainPageInfo {
+  hiddenInputs: Record<string, string>;
+  submissionPath: string;
+  cookieHeader: string;
+}
+
+export interface SearchResult {
+  subject: string;
+  path: string;
+}
+
+// ---------- Timetable data ----------
 
 export interface TimetableEntry {
   day: string;
@@ -13,13 +34,19 @@ export interface TimetableEntry {
   lecturer?: string;
 }
 
-export interface TimetableResponse {
+/** Timetable grouped by group/section name. */
+export type GroupedTimetable = Record<string, TimetableEntry[]>;
+
+// ---------- API shapes ----------
+
+export interface SearchRequest {
+  campus: string;
+  faculty: string;
   course: string;
-  semester: string;
-  entries: TimetableEntry[];
 }
 
-export interface ScraperError {
-  code: "NO_RESULTS" | "PARSE_ERROR" | "NETWORK_ERROR" | "TIMEOUT" | "UNKNOWN";
-  message: string;
+export interface SearchResponse {
+  course: string;
+  subject: string;
+  entries: TimetableEntry[];
 }

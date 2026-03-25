@@ -1,206 +1,258 @@
 import axios from "axios";
-import { wrapper } from "axios-cookiejar-support";
-import { CookieJar } from "tough-cookie";
 import * as cheerio from "cheerio";
-import type { TimetableEntry, TimetableRequest, TimetableResponse } from "./types";
+import type {
+  Campus,
+  Faculty,
+  MainPageInfo,
+  SearchResult,
+  TimetableEntry,
+  GroupedTimetable,
+  SearchRequest,
+  SearchResponse,
+} from "./types";
 
-const BASE_URL =
-  "https://simsweb4.uitm.edu.my/estudent/class_timetable/indexIllIl.cfm";
+const BASE_URL = "https://simsweb4.uitm.edu.my/estudent/class_timetable/";
+const REFERER = "https://simsweb4.uitm.edu.my/estudent/class_timetable/index.htm";
 
-const HEADERS = {
+const BASE_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-  Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   "Accept-Language": "en-US,en;q=0.9",
-  "Accept-Encoding": "gzip, deflate, br",
-  Connection: "keep-alive",
-  "Upgrade-Insecure-Requests": "1",
+  Referer: REFERER,
 };
 
-/** Build a session-aware axios instance with a shared cookie jar. */
-function createSessionClient() {
-  const jar = new CookieJar();
-  const client = wrapper(
-    axios.create({
-      jar,
-      withCredentials: true,
-      timeout: 30000,
-      headers: HEADERS,
+const http = axios.create({ timeout: 30000 });
+
+// ---------------------------------------------------------------------------
+// Step 1 — Campus list
+// ---------------------------------------------------------------------------
+
+export async function fetchCampuses(): Promise<Campus[]> {
+  const url =
+    `${BASE_URL}cfc/select.cfc?method=CAM_lII1II11I1lIIII11IIl1I111I` +
+    `&key=All&page=1&page_limit=100`;
+
+  const res = await http.get<unknown>(url, {
+    headers: { ...BASE_HEADERS, Accept: "application/json, text/javascript, */*" },
+  });
+
+  const rows = extractRows(res.data);
+
+  return rows
+    .filter((row) => row.id !== "X")
+    .map((row) => {
+      const text = String(row.text ?? row.name ?? "");
+      const fullname = text.toUpperCase().includes("SELANGOR")
+        ? text.trim()
+        : splitAfterFirstDash(text);
+      return { code: String(row.id), fullname: fullname.trim() };
     })
-  );
-  return client;
+    .filter((c) => c.code && c.fullname);
 }
 
-/** Step 1: GET the timetable page and extract all hidden input fields. */
-async function getHiddenFields(
-  client: ReturnType<typeof createSessionClient>
-): Promise<Record<string, string>> {
-  const response = await client.get<string>(BASE_URL, {
+// ---------------------------------------------------------------------------
+// Step 2 — Faculty list
+// ---------------------------------------------------------------------------
+
+export async function fetchFaculties(): Promise<Faculty[]> {
+  const url =
+    `${BASE_URL}cfc/select.cfc?method=FAC_lII1II11I1lIIII11IIl1I111I` +
+    `&key=All&page=1&page_limit=100`;
+
+  const res = await http.get<unknown>(url, {
+    headers: { ...BASE_HEADERS, Accept: "application/json, text/javascript, */*" },
+  });
+
+  const rows = extractRows(res.data);
+
+  return rows
+    .map((row) => {
+      const text = String(row.text ?? row.name ?? "");
+      const fullname = splitAfterFirstDash(text);
+      return { code: String(row.id), fullname: fullname.trim() };
+    })
+    .filter((f) => f.code && f.fullname);
+}
+
+// ---------------------------------------------------------------------------
+// Step 3 — Main page: hidden inputs, submission path, cookies
+// ---------------------------------------------------------------------------
+
+async function getMainPageInfo(): Promise<MainPageInfo> {
+  const res = await http.get<string>(`${BASE_URL}index.cfm`, {
+    headers: BASE_HEADERS,
     responseType: "text",
   });
 
-  const $ = cheerio.load(response.data);
-  const hiddenFields: Record<string, string> = {};
+  // Collect cookies from Set-Cookie headers
+  const rawCookies = res.headers["set-cookie"] ?? [];
+  const cookieHeader = rawCookies
+    .map((c: string) => c.split(";")[0])
+    .join("; ");
 
-  // Dynamically collect every hidden input — never hardcode field names
+  const $ = cheerio.load(res.data as string);
+
+  // Collect all hidden inputs
+  const hiddenInputs: Record<string, string> = {};
   $('input[type="hidden"]').each((_, el) => {
     const name = $(el).attr("name");
     const value = $(el).attr("value") ?? "";
-    if (name) {
-      hiddenFields[name] = value;
+    if (name) hiddenInputs[name] = value;
+  });
+
+  // Parse inline scripts for:
+  //   1. document.getElementById('id').value = 'value'
+  //   2. url: 'something.cfm...'
+  let submissionPath = "";
+
+  $("script").each((_, el) => {
+    const src = $(el).html() ?? "";
+    if (!src.includes("check_form_before_submit")) return;
+
+    // Extract document.getElementById assignments
+    const setValueRe =
+      /document\.getElementById\(\s*['"]([^'"]+)['"]\s*\)\.value\s*=\s*['"]([^'"]*)['"]/g;
+    let match: RegExpExecArray | null;
+    while ((match = setValueRe.exec(src)) !== null) {
+      hiddenInputs[match[1]] = match[2];
+    }
+
+    // Extract submission URL (url: '...cfm...')
+    const urlRe = /url\s*:\s*['"]([^'"]*\.cfm[^'"]*)['"]/i;
+    const urlMatch = src.match(urlRe);
+    if (urlMatch?.[1]) {
+      submissionPath = urlMatch[1].replace(/^\//, "");
     }
   });
 
-  return hiddenFields;
+  // Fallback: try any <form> action
+  if (!submissionPath) {
+    const formAction = $("form").first().attr("action") ?? "";
+    if (formAction) {
+      submissionPath = formAction.replace(/^\//, "").replace(/^.*class_timetable\//, "");
+    }
+  }
+
+  return { hiddenInputs, submissionPath, cookieHeader };
 }
 
-/** Step 2–3: POST with hidden fields + search params; parse result for "View" action. */
-async function postSearchForm(
-  client: ReturnType<typeof createSessionClient>,
-  hiddenFields: Record<string, string>,
-  req: TimetableRequest
-): Promise<{ viewUrl: string | null; viewParams: Record<string, string> | null; html: string }> {
+// ---------------------------------------------------------------------------
+// Step 4 — Search subjects (POST), returns [{subject, path}]
+// ---------------------------------------------------------------------------
+
+async function searchSubjects(
+  info: MainPageInfo,
+  req: SearchRequest
+): Promise<SearchResult[]> {
+  const targetUrl = info.submissionPath
+    ? `${BASE_URL}${info.submissionPath}`
+    : `${BASE_URL}index.cfm`;
+
   const formData = new URLSearchParams({
-    ...hiddenFields,
+    ...info.hiddenInputs,
     search_campus: req.campus,
     search_faculty: req.faculty,
     search_course: req.course.toUpperCase(),
   });
 
-  const response = await client.post<string>(BASE_URL, formData.toString(), {
+  const res = await http.post<string>(targetUrl, formData.toString(), {
     headers: {
-      ...HEADERS,
+      ...BASE_HEADERS,
       "Content-Type": "application/x-www-form-urlencoded",
-      Referer: BASE_URL,
+      Cookie: info.cookieHeader,
     },
     responseType: "text",
   });
 
-  const html = response.data as string;
+  const html = res.data as string;
+
+  // Remove script tags to make HTML parsing cleaner
   const $ = cheerio.load(html);
+  $("script").remove();
 
-  // Locate the "View" link or button. The site may render it as an <a> or
-  // a button that triggers a form/JS call — try several selector strategies.
-  let viewUrl: string | null = null;
-  let viewParams: Record<string, string> | null = null;
+  const results: SearchResult[] = [];
 
-  // Strategy A: plain anchor containing "View" text
-  $("a").each((_, el) => {
-    const text = $(el).text().trim().toLowerCase();
-    const href = $(el).attr("href") ?? "";
-    if ((text === "view" || text === "lihat") && href) {
-      viewUrl = href.startsWith("http") ? href : resolveUrl(BASE_URL, href);
+  // Find the results table — look for rows containing "View" anchor links
+  $("table tr").each((_, row) => {
+    const $row = $(row);
+    const viewAnchor = $row.find('a[href]').filter((_, el) => {
+      return $(el).text().trim().toLowerCase() === "view";
+    }).first();
+
+    if (!viewAnchor.length) return;
+
+    const href = viewAnchor.attr("href") ?? "";
+    if (!href) return;
+
+    // Subject text is typically in the first or second td
+    const cells = $row.find("td");
+    let subjectText = "";
+    cells.each((_, td) => {
+      const text = $(td).text().replace(/\s+/g, " ").trim();
+      if (text && text.toLowerCase() !== "view" && text.length > 1) {
+        subjectText = text;
+        return false; // break
+      }
+    });
+
+    // Normalize subject: trim, remove dots
+    const subject = subjectText.replace(/\./g, "").trim();
+    const path = href.replace(/^\/estudent\/class_timetable\//, "").replace(/^\//, "");
+
+    if (path) {
+      results.push({ subject, path });
     }
   });
 
-  // Strategy B: input[type=submit] or button with value "View" inside a form
-  if (!viewUrl) {
-    $("form").each((_, form) => {
-      const hasViewBtn =
-        $(form).find('input[value="View"], input[value="Lihat"], button:contains("View")').length > 0;
-      if (hasViewBtn) {
-        const action = $(form).attr("action") ?? BASE_URL;
-        const params: Record<string, string> = {};
-        $(form)
-          .find("input")
-          .each((_, input) => {
-            const n = $(input).attr("name");
-            const v = $(input).attr("value") ?? "";
-            if (n) params[n] = v;
-          });
-        viewUrl = action.startsWith("http") ? action : resolveUrl(BASE_URL, action);
-        viewParams = params;
-      }
-    });
-  }
-
-  // Strategy C: onclick JS with URL fragments e.g. window.location='...' or href='...'
-  if (!viewUrl) {
-    $("[onclick]").each((_, el) => {
-      const onclick = $(el).attr("onclick") ?? "";
-      const match = onclick.match(/(?:window\.location\s*=\s*|href\s*=\s*)['"]([^'"]+)['"]/i);
-      if (match && match[1]) {
-        viewUrl = match[1].startsWith("http") ? match[1] : resolveUrl(BASE_URL, match[1]);
-      }
-    });
-  }
-
-  return { viewUrl, viewParams, html };
+  return results;
 }
 
-/** Step 4: Follow the View request using the same session. */
-async function fetchTimetablePage(
-  client: ReturnType<typeof createSessionClient>,
-  viewUrl: string,
-  viewParams: Record<string, string> | null
-): Promise<string> {
-  if (viewParams) {
-    // POST to the view URL with form params
-    const formData = new URLSearchParams(viewParams);
-    const response = await client.post<string>(viewUrl, formData.toString(), {
-      headers: {
-        ...HEADERS,
-        "Content-Type": "application/x-www-form-urlencoded",
-        Referer: BASE_URL,
-      },
-      responseType: "text",
-    });
-    return response.data as string;
-  }
+// ---------------------------------------------------------------------------
+// Step 5 — Fetch and parse timetable for a given path
+// ---------------------------------------------------------------------------
 
-  const response = await client.get<string>(viewUrl, {
-    headers: { ...HEADERS, Referer: BASE_URL },
+async function fetchSubjectTimetable(
+  path: string,
+  cookieHeader: string
+): Promise<GroupedTimetable> {
+  const url = `${BASE_URL}${path}`;
+
+  const res = await http.get<string>(url, {
+    headers: { ...BASE_HEADERS, Cookie: cookieHeader },
     responseType: "text",
   });
-  return response.data as string;
-}
 
-/** Step 5: Parse the timetable HTML into normalized TimetableEntry[]. */
-function parseTimetableHtml(html: string): { entries: TimetableEntry[]; semester: string } {
-  const $ = cheerio.load(html);
-  const entries: TimetableEntry[] = [];
+  const $ = cheerio.load(res.data as string);
+  $("script").remove();
 
-  // Extract semester if visible — look for text patterns like "2025/2026-2"
-  let semester = "";
-  $("*").each((_, el) => {
-    const text = $(el).clone().children().remove().end().text().trim();
-    if (/\d{4}\/\d{4}-\d/.test(text) && !semester) {
-      semester = text.match(/(\d{4}\/\d{4}-\d)/)?.[1] ?? "";
-    }
-    if (/SEM\s*\d/i.test(text) && !semester) {
-      semester = text.match(/(SEM\s*\d[^\s]*)/i)?.[1] ?? "";
-    }
-  });
+  const grouped: GroupedTimetable = {};
 
-  // The timetable is typically an HTML <table>. Each row has columns for
-  // Day, Time (start–end), Subject, Section, Venue, Lecturer.
-  // Column order can vary — detect by header text.
   $("table").each((_, table) => {
     const rows = $(table).find("tr").toArray();
     if (rows.length < 2) return;
 
-    // Determine column indices from header row
+    // Detect columns from header row
     const headerCells = $(rows[0])
       .find("th, td")
       .toArray()
       .map((el) => $(el).text().trim().toLowerCase());
 
-    const colIndex = {
+    const colIdx = {
+      group: findColIndex(headerCells, ["group", "kump", "section", "seksyen", "kumpulan"]),
       day: findColIndex(headerCells, ["day", "hari"]),
       time: findColIndex(headerCells, ["time", "masa", "waktu"]),
       start: findColIndex(headerCells, ["start", "mula"]),
       end: findColIndex(headerCells, ["end", "tamat"]),
       venue: findColIndex(headerCells, ["venue", "tempat", "bilik", "room"]),
-      section: findColIndex(headerCells, ["section", "seksyen", "kump", "group"]),
       lecturer: findColIndex(headerCells, ["lecturer", "pensyarah", "instructor", "staff"]),
-      course: findColIndex(headerCells, ["course", "subject", "kod", "code"]),
     };
 
-    // Skip tables that don't look like timetable tables
-    const hasTimeCols =
-      colIndex.time >= 0 || (colIndex.start >= 0 && colIndex.end >= 0);
-    if (colIndex.day < 0 && !hasTimeCols) return;
+    // Skip tables that don't look like timetable data
+    const hasRequiredCols =
+      colIdx.day >= 0 &&
+      (colIdx.time >= 0 || (colIdx.start >= 0 && colIdx.end >= 0));
+    if (!hasRequiredCols) return;
 
     rows.slice(1).forEach((row) => {
       const cells = $(row)
@@ -210,54 +262,114 @@ function parseTimetableHtml(html: string): { entries: TimetableEntry[]; semester
 
       if (cells.length < 2) return;
 
-      const rawDay = colIndex.day >= 0 ? cells[colIndex.day] : "";
-      const normalizedDay = normalizeDay(rawDay);
-      if (!normalizedDay) return; // skip non-data rows
+      const rawDay = colIdx.day >= 0 ? (cells[colIdx.day] ?? "") : "";
+      const day = normalizeDay(rawDay);
+      if (!day) return;
 
       let start = "";
       let end = "";
-
-      if (colIndex.start >= 0 && colIndex.end >= 0) {
-        start = normalizeTime(cells[colIndex.start] ?? "");
-        end = normalizeTime(cells[colIndex.end] ?? "");
-      } else if (colIndex.time >= 0) {
-        const timeParts = parseTimeRange(cells[colIndex.time] ?? "");
-        start = timeParts.start;
-        end = timeParts.end;
+      if (colIdx.start >= 0 && colIdx.end >= 0) {
+        start = normalizeTime(cells[colIdx.start] ?? "");
+        end = normalizeTime(cells[colIdx.end] ?? "");
+      } else if (colIdx.time >= 0) {
+        const parsed = parseTimeRange(cells[colIdx.time] ?? "");
+        start = parsed.start;
+        end = parsed.end;
       }
+      if (!start || !end) return;
 
-      const rawVenue = colIndex.venue >= 0 ? cells[colIndex.venue] : "";
+      const rawVenue = colIdx.venue >= 0 ? (cells[colIdx.venue] ?? "") : "";
       const venue = rawVenue.trim() || "Online";
+      const lecturer =
+        colIdx.lecturer >= 0 && cells[colIdx.lecturer]
+          ? cells[colIdx.lecturer]
+          : undefined;
 
-      const section = colIndex.section >= 0 ? cells[colIndex.section] : "";
-      const lecturer = colIndex.lecturer >= 0 ? cells[colIndex.lecturer] : undefined;
+      // Group name
+      const groupName =
+        colIdx.group >= 0 && cells[colIdx.group]
+          ? cells[colIdx.group].trim()
+          : "DEFAULT";
 
-      if (start && end) {
-        entries.push({
-          day: normalizedDay,
-          start,
-          end,
-          venue,
-          section,
-          ...(lecturer ? { lecturer } : {}),
-        });
-      }
+      const entry: TimetableEntry = {
+        day,
+        start,
+        end,
+        venue,
+        section: groupName,
+        ...(lecturer ? { lecturer } : {}),
+      };
+
+      if (!grouped[groupName]) grouped[groupName] = [];
+      grouped[groupName].push(entry);
     });
   });
 
-  return { entries, semester };
+  return grouped;
+}
+
+// ---------------------------------------------------------------------------
+// Public entry point — full search flow
+// ---------------------------------------------------------------------------
+
+export async function searchTimetable(req: SearchRequest): Promise<SearchResponse> {
+  // Step 3: get session info
+  const info = await getMainPageInfo();
+
+  // Step 4: search subjects
+  const results = await searchSubjects(info, req);
+
+  if (results.length === 0) {
+    return {
+      course: req.course.toUpperCase(),
+      subject: req.course.toUpperCase(),
+      entries: [],
+    };
+  }
+
+  // Step 5: fetch timetable for the first matching result
+  const first = results[0]!;
+  const grouped = await fetchSubjectTimetable(first.path, info.cookieHeader);
+
+  // Flatten grouped data into entries (section = group name)
+  const entries: TimetableEntry[] = Object.values(grouped).flat();
+
+  return {
+    course: req.course.toUpperCase(),
+    subject: first.subject,
+    entries,
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
 
-function resolveUrl(base: string, relative: string): string {
-  try {
-    return new URL(relative, base).toString();
-  } catch {
-    return relative;
+/** Extract rows from various ColdFusion CFC JSON response shapes. */
+function extractRows(data: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(data)) return data as Array<Record<string, unknown>>;
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    for (const key of ["rows", "data", "result", "items", "list"]) {
+      if (Array.isArray(obj[key])) return obj[key] as Array<Record<string, unknown>>;
+    }
+    // ColdFusion sometimes wraps: { "DATA": [...], "COLUMNS": [...] }
+    if (Array.isArray(obj["DATA"]) && Array.isArray(obj["COLUMNS"])) {
+      const cols = obj["COLUMNS"] as string[];
+      return (obj["DATA"] as unknown[][]).map((row) => {
+        const record: Record<string, unknown> = {};
+        cols.forEach((col, i) => { record[col.toLowerCase()] = row[i]; });
+        return record;
+      });
+    }
   }
+  return [];
+}
+
+function splitAfterFirstDash(text: string): string {
+  const idx = text.indexOf("-");
+  if (idx === -1) return text;
+  return text.slice(idx + 1).trim();
 }
 
 function findColIndex(headers: string[], keywords: string[]): number {
@@ -265,27 +377,13 @@ function findColIndex(headers: string[], keywords: string[]): number {
 }
 
 const DAY_MAP: Record<string, string> = {
-  ahad: "Sunday",
-  sunday: "Sunday",
-  sun: "Sunday",
-  isnin: "Monday",
-  monday: "Monday",
-  mon: "Monday",
-  selasa: "Tuesday",
-  tuesday: "Tuesday",
-  tue: "Tuesday",
-  rabu: "Wednesday",
-  wednesday: "Wednesday",
-  wed: "Wednesday",
-  khamis: "Thursday",
-  thursday: "Thursday",
-  thu: "Thursday",
-  jumaat: "Friday",
-  friday: "Friday",
-  fri: "Friday",
-  sabtu: "Saturday",
-  saturday: "Saturday",
-  sat: "Saturday",
+  ahad: "Sunday", sunday: "Sunday", sun: "Sunday",
+  isnin: "Monday", monday: "Monday", mon: "Monday",
+  selasa: "Tuesday", tuesday: "Tuesday", tue: "Tuesday",
+  rabu: "Wednesday", wednesday: "Wednesday", wed: "Wednesday",
+  khamis: "Thursday", thursday: "Thursday", thu: "Thursday",
+  jumaat: "Friday", friday: "Friday", fri: "Friday",
+  sabtu: "Saturday", saturday: "Saturday", sat: "Saturday",
 };
 
 function normalizeDay(raw: string): string {
@@ -294,78 +392,17 @@ function normalizeDay(raw: string): string {
 }
 
 function normalizeTime(raw: string): string {
-  // Accept formats: "0800", "08:00", "8:00 AM", "08.00"
-  const cleaned = raw.replace(/[.\s]/g, ":");
+  const cleaned = raw.replace(/[.\s]/g, ":").replace(/:+/g, ":");
   const match = cleaned.match(/(\d{1,2}):?(\d{2})/);
   if (!match) return "";
-  const h = match[1].padStart(2, "0");
-  const m = match[2];
-  return `${h}:${m}`;
+  return `${match[1].padStart(2, "0")}:${match[2]}`;
 }
 
 function parseTimeRange(raw: string): { start: string; end: string } {
-  // Handles "0800-1000", "08:00 - 10:00", "8.00–10.00"
   const cleaned = raw.replace(/–/g, "-").replace(/\s/g, "");
   const parts = cleaned.split("-");
   if (parts.length >= 2) {
-    return {
-      start: normalizeTime(parts[0]),
-      end: normalizeTime(parts[1]),
-    };
+    return { start: normalizeTime(parts[0] ?? ""), end: normalizeTime(parts[1] ?? "") };
   }
   return { start: "", end: "" };
-}
-
-// ---------------------------------------------------------------------------
-// Public entry point
-// ---------------------------------------------------------------------------
-
-export async function fetchTimetable(req: TimetableRequest): Promise<TimetableResponse> {
-  const client = createSessionClient();
-
-  // Step 1 — GET page, collect cookies + hidden fields
-  const hiddenFields = await getHiddenFields(client);
-
-  // Step 2–3 — POST search form
-  const { viewUrl, viewParams, html: searchHtml } = await postSearchForm(
-    client,
-    hiddenFields,
-    req
-  );
-
-  // Check for "no results" patterns in the search response
-  const searchText = searchHtml.toLowerCase();
-  if (
-    searchText.includes("no record") ||
-    searchText.includes("tiada rekod") ||
-    searchText.includes("not found") ||
-    searchText.includes("0 record")
-  ) {
-    return { course: req.course.toUpperCase(), semester: "", entries: [] };
-  }
-
-  // If no View link found but search result HTML may already contain the timetable,
-  // attempt to parse it directly before throwing.
-  if (!viewUrl) {
-    const { entries, semester } = parseTimetableHtml(searchHtml);
-    if (entries.length > 0) {
-      return { course: req.course.toUpperCase(), semester, entries };
-    }
-    throw new Error(
-      "NO_RESULTS: Could not find timetable view link in search results. " +
-        "The site structure may have changed."
-    );
-  }
-
-  // Step 4 — Fetch timetable page (same session)
-  const timetableHtml = await fetchTimetablePage(client, viewUrl, viewParams);
-
-  // Step 5 — Parse timetable into normalized entries
-  const { entries, semester } = parseTimetableHtml(timetableHtml);
-
-  return {
-    course: req.course.toUpperCase(),
-    semester,
-    entries,
-  };
 }

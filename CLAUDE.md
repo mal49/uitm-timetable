@@ -1,180 +1,155 @@
 @AGENTS.md
 
-You are an expert full-stack developer.
+# UiTM Timetable Maker — Instructions
 
-Build a complete web application called "UiTM Timetable Maker".
+You are an expert full-stack developer. Build a complete production-ready web app called **UiTM Timetable Maker**.
 
-Tech stack:
+## Tech Stack
 - Next.js (App Router)
-- React
+- TypeScript
 - Tailwind CSS
 - shadcn/ui
-- Backend: Next.js API routes
-- Scraping: axios + cheerio
+- Axios
+- Cheerio
 
-==================================================
-PROJECT GOAL
-==================================================
+## Goal
+Build a web app that allows users to:
+- load campus list
+- load faculty list
+- search by course code
+- fetch UiTM timetable data from the UiTM timetable website
+- display the timetable in a clean, modern UI
 
-Create a system that allows users to input:
-- Campus
-- Faculty
-- Course Code
+The source website is:
+`https://simsweb4.uitm.edu.my/estudent/class_timetable/`
 
-Then fetch timetable data from:
-https://simsweb4.uitm.edu.my/estudent/class_timetable/indexIllIl.cfm
+---
 
-Transform the data into a clean, modern timetable UI.
+## Important Reference Logic
 
-==================================================
-IMPORTANT BEHAVIOR (SCRAPING LOGIC)
-==================================================
+Port the following PHP scraping logic into modern TypeScript for Next.js API routes.
 
-The UiTM site:
-- Uses ColdFusion (.cfm)
-- Does NOT provide a public API
-- Returns HTML responses
-- Uses hidden form inputs
-- Requires session continuity (cookies)
+### Real scraping flow
 
-You MUST implement scraping as follows:
+#### 1. Get campus list
+Fetch:
+`cfc/select.cfc?method=CAM_lII1II11I1lIIII11IIl1I111I&key=All&page=1&page_limit=30`
 
-1. Send GET request to the main timetable page
-2. Extract ALL hidden input fields dynamically
-3. Send POST request with:
-   - hidden fields
-   - search_campus
-   - search_faculty
-   - search_course
+Requirements:
+- send a `Referer` header pointing to:
+  `https://simsweb4.uitm.edu.my/estudent/class_timetable/index.htm`
+- parse JSON response
+- return campus objects:
+  - `code`
+  - `fullname`
 
-4. Parse the response HTML to find:
-   - search results
-   - "View" button or link
+Rules:
+- skip item where `id === 'X'`
+- if campus text does not contain `SELANGOR`, split on first `-` and keep the second part
+- otherwise keep full text
 
-5. Simulate clicking "View":
-   - extract parameters or URL
-   - send another request using SAME session/cookies
+#### 2. Get faculty list
+Fetch:
+`cfc/select.cfc?method=FAC_lII1II11I1lIIII11IIl1I111I&key=All&page=1&page_limit=30`
 
-6. Parse the timetable HTML:
-   Extract:
-   - course
-   - day
-   - start time
-   - end time
-   - venue
-   - section/group
-   - lecturer (if available)
+Requirements:
+- same referer header
+- parse JSON response
+- return:
+  - `code`
+  - `fullname`
 
-7. Normalize data into JSON format
+Rules:
+- faculty fullname is the second part after the first `-`
 
-IMPORTANT:
-- Do NOT hardcode hidden input names
-- Always dynamically extract them
-- Maintain cookies/session between requests
+#### 3. Get main page info
+Fetch:
+`index.cfm`
 
-==================================================
-API DESIGN
-==================================================
+From this page:
+- extract all hidden inputs
+- extract select names/values if needed
+- parse inline scripts
+- find script containing `check_form_before_submit`
+- extract any values assigned through:
+  `document.getElementById(...).value = ...`
+- extract submission path from JS with pattern like:
+  `url: '...cfm...'`
 
-Create:
-POST /api/timetable
+Also:
+- capture all `Set-Cookie` headers from the response
+- build a cookie header string for later requests
 
-Request:
+Return:
+- `hiddenInputs`
+- `submissionPath`
+- `cookieHeader`
+
+#### 4. Search subjects by campus + faculty + course
+Submit POST request to:
+`https://simsweb4.uitm.edu.my/estudent/class_timetable/` + `submissionPath`
+
+POST body must include:
+- all extracted hidden inputs
+- `search_campus`
+- `search_faculty`
+- `search_course`
+
+Headers must include:
+- `Content-Type: application/x-www-form-urlencoded`
+- `Referer: https://simsweb4.uitm.edu.my/estudent/class_timetable/index.htm`
+- `Cookie: <cookieHeader>`
+
+Then parse the returned HTML:
+- remove script tags first
+- parse rows from the result table
+- skip header row
+- extract:
+  - course subject text
+  - `View` anchor href
+
+Normalize subject:
+- trim whitespace
+- remove `.` characters
+
+Return array:
+- `subject`
+- `path`
+
+#### 5. Fetch subject timetable
+For a selected `path`, request:
+`https://simsweb4.uitm.edu.my/estudent/class_timetable/` + `path`
+
+Headers:
+- `Referer: https://simsweb4.uitm.edu.my/estudent/class_timetable/index.htm`
+- `Cookie: <cookieHeader>`
+
+Then parse timetable HTML:
+- iterate through table rows
+- skip header row
+- collect all `<td>` text
+- extract group name from the correct column
+- group rows by group name
+
+Return grouped timetable data.
+
+---
+
+## Required API Endpoints
+
+Create these Next.js API endpoints:
+
+### `GET /api/campuses`
+Returns all campuses.
+
+### `GET /api/faculties`
+Returns all faculties.
+
+### `POST /api/search`
+Request body:
+```json
 {
   "campus": "B",
   "faculty": "CD",
   "course": "CSC669"
 }
-
-Response:
-{
-  "course": "CSC669",
-  "semester": "20262",
-  "entries": [
-    {
-      "day": "Monday",
-      "start": "08:00",
-      "end": "10:00",
-      "venue": "Online",
-      "section": "A1"
-    }
-  ]
-}
-
-==================================================
-FRONTEND REQUIREMENTS
-==================================================
-
-Build a UI with:
-
-1. Search form:
-   - Campus dropdown
-   - Faculty dropdown
-   - Course code input
-
-2. Result display:
-   - Weekly timetable grid (Mon–Fri)
-   - Table fallback view
-
-3. Styling:
-   - Use Tailwind + shadcn/ui
-   - Clean, modern UI
-   - Responsive
-   - Dark mode support
-
-4. UX:
-   - Loading state
-   - Error handling
-   - Empty result handling
-
-==================================================
-FEATURES
-==================================================
-
-Core:
-- Fetch timetable from UiTM
-- Display structured timetable
-
-Enhancements:
-- Color-code subjects
-- Replace empty venue with "Online"
-- Highlight overlapping classes (clash detection)
-
-==================================================
-FILE STRUCTURE
-==================================================
-
-- /app/page.tsx → main UI
-- /app/api/timetable/route.ts → scraping logic
-- /components → UI components
-- /lib/scraper.ts → scraping helper functions
-
-==================================================
-DEVELOPMENT APPROACH
-==================================================
-
-1. First implement backend scraping logic
-2. Test API independently
-3. Then build frontend UI
-4. Connect frontend to API
-5. Improve UI/UX
-
-==================================================
-OUTPUT FORMAT
-==================================================
-
-- Generate full working code
-- Follow best practices
-- Use clean, modular structure
-- Add comments for important logic (especially scraping)
-
-==================================================
-IMPORTANT
-==================================================
-
-- Do not skip scraping complexity
-- Do not assume API exists
-- Ensure session persistence between requests
-- Make code production-ready
-
-Start building the project now.
