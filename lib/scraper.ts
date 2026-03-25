@@ -79,7 +79,7 @@ export async function fetchFaculties(): Promise<Faculty[]> {
 // Step 3 — Main page: hidden inputs, submission path, cookies
 // ---------------------------------------------------------------------------
 
-async function getMainPageInfo(): Promise<MainPageInfo> {
+export async function getMainPageInfo(): Promise<MainPageInfo> {
   const res = await http.get<string>(`${BASE_URL}index.cfm`, {
     headers: BASE_HEADERS,
     responseType: "text",
@@ -143,7 +143,7 @@ async function getMainPageInfo(): Promise<MainPageInfo> {
 // Step 4 — Search subjects (POST), returns [{subject, path}]
 // ---------------------------------------------------------------------------
 
-async function searchSubjects(
+export async function searchSubjects(
   info: MainPageInfo,
   req: SearchRequest
 ): Promise<SearchResult[]> {
@@ -245,7 +245,7 @@ async function searchSubjects(
 // Step 5 — Fetch and parse timetable for a given path
 // ---------------------------------------------------------------------------
 
-async function fetchSubjectTimetable(
+export async function fetchSubjectTimetable(
   path: string,
   cookieHeader: string
 ): Promise<GroupedTimetable> {

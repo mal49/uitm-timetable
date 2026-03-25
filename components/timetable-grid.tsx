@@ -10,126 +10,114 @@ interface TimetableGridProps {
   course: string;
 }
 
+function timeToMinutes(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+
 export function TimetableGrid({ entries, course }: TimetableGridProps) {
   const activeDays = WEEKDAYS.filter((day) => entries.some((e) => e.day === day));
-  const sections = [...new Set(entries.map((e) => e.section).filter(Boolean))].sort();
+  const days = activeDays.length > 0 ? activeDays : WEEKDAYS;
 
-  // cell lookup: "section|day" → entries
-  const cellMap = new Map<string, TimetableEntry[]>();
-  for (const section of sections) {
-    for (const day of activeDays) {
-      const key = `${section}|${day}`;
-      cellMap.set(
-        key,
-        entries.filter((e) => e.section === section && e.day === day)
-      );
-    }
+  const byDay = new Map<(typeof WEEKDAYS)[number], TimetableEntry[]>();
+  for (const day of days) byDay.set(day, []);
+  for (const e of entries) {
+    if (!days.includes(e.day as (typeof WEEKDAYS)[number])) continue;
+    byDay.get(e.day as (typeof WEEKDAYS)[number])?.push(e);
+  }
+  for (const day of days) {
+    byDay.set(
+      day,
+      (byDay.get(day) ?? []).sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start))
+    );
   }
 
-  if (sections.length === 0) {
+  if (entries.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
+      <div className="rounded-2xl border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
         No sessions to display.
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[480px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/40">
-              <th className="sticky left-0 z-10 bg-muted/40 text-left px-4 py-3 font-semibold text-muted-foreground text-[11px] uppercase tracking-widest w-28 border-r border-border">
-                Group
-              </th>
-              {activeDays.map((day) => (
-                <th
-                  key={day}
-                  className="px-3 py-3 text-center font-semibold text-foreground text-[11px] uppercase tracking-widest border-r border-border last:border-r-0 min-w-[120px]"
-                >
-                  <span className="sm:hidden">{day.slice(0, 3)}</span>
-                  <span className="hidden sm:inline">{day}</span>
-                </th>
-              ))}
-            </tr>
-          </thead>
+    <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-5">
+        {days.map((day) => {
+          const dayEntries = byDay.get(day) ?? [];
+          return (
+            <section
+              key={day}
+              className="rounded-2xl border border-border bg-muted/30 p-3 sm:p-4"
+            >
+              <header className="flex items-baseline justify-between gap-2">
+                <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                  {day}
+                </h3>
+                <span className="text-[11px] text-muted-foreground">
+                  {dayEntries.length}
+                </span>
+              </header>
 
-          <tbody>
-            {sections.map((section, rowIdx) => {
-              const color = getSubjectColor(section || course);
-              const isEven = rowIdx % 2 === 0;
-
-              return (
-                <tr
-                  key={section}
-                  className="border-b border-border last:border-b-0 group/row"
-                >
-                  {/* Section label */}
-                  <td
-                    className={`sticky left-0 z-10 border-r border-border px-3 py-3 transition-colors ${
-                      isEven ? "bg-card group-hover/row:bg-muted/30" : "bg-muted/20 group-hover/row:bg-muted/40"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`h-2.5 w-2.5 rounded-full shrink-0 border ${color.bg} ${color.border}`}
-                      />
-                      <span className={`font-mono font-bold text-xs ${color.text}`}>
-                        {section}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Day cells */}
-                  {activeDays.map((day) => {
-                    const key = `${section}|${day}`;
-                    const slotEntries = cellMap.get(key) ?? [];
+              <div className="mt-3 space-y-2">
+                {dayEntries.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border/70 bg-background/50 px-3 py-4 text-center text-xs text-muted-foreground">
+                    No class
+                  </div>
+                ) : (
+                  dayEntries.map((entry, i) => {
+                    const colorKey =
+                      entry.subjectKey || entry.course || entry.section || course || "SUBJECT";
+                    const color = getSubjectColor(colorKey);
+                    const title = (entry.course || entry.subjectKey || course || "SUBJECT").trim();
 
                     return (
-                      <td
-                        key={day}
-                        className={`px-2 py-2 border-r border-border last:border-r-0 align-top transition-colors ${
-                          isEven ? "bg-card group-hover/row:bg-muted/30" : "bg-muted/20 group-hover/row:bg-muted/40"
+                      <div
+                        key={`${day}-${entry.start}-${entry.end}-${entry.section}-${i}`}
+                        className={`group relative overflow-hidden rounded-2xl border px-3 py-2.5 shadow-sm transition-transform will-change-transform hover:-translate-y-px ${
+                          entry.isClash
+                            ? "border-destructive/50 bg-destructive/10 text-destructive"
+                            : `${color.bg} ${color.border} ${color.text}`
                         }`}
                       >
-                        {slotEntries.length === 0 ? (
-                          <div className="h-8 flex items-center justify-center">
-                            <span className="text-muted-foreground/20 text-base select-none">·</span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-extrabold tracking-tight">
+                                {title}
+                              </span>
+                              {entry.section ? (
+                                <span className="truncate text-[10px] font-medium opacity-70">
+                                  {entry.section.replace(title, "").trim() || entry.section}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold opacity-90">
+                              <Clock className="h-3 w-3 shrink-0 opacity-70" />
+                              <span className="tabular-nums">{entry.start}–{entry.end}</span>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="space-y-1">
-                            {slotEntries.map((entry, i) => (
-                              <div
-                                key={i}
-                                className={`rounded-lg border px-2.5 py-2 ${color.bg} ${color.border} ${color.text}`}
-                              >
-                                <div className="flex items-center gap-1 font-semibold text-[11px] leading-tight">
-                                  <Clock className="h-2.5 w-2.5 shrink-0 opacity-60" />
-                                  <span>{entry.start}–{entry.end}</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-[10px] opacity-70 mt-1 truncate">
-                                  <MapPin className="h-2.5 w-2.5 shrink-0" />
-                                  <span className="truncate">{entry.venue}</span>
-                                </div>
-                                {entry.lecturer && (
-                                  <div className="flex items-center gap-1 text-[10px] opacity-60 mt-0.5 truncate">
-                                    <User className="h-2.5 w-2.5 shrink-0" />
-                                    <span className="truncate">{entry.lecturer}</span>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                        </div>
+
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] opacity-80">
+                          <MapPin className="h-3 w-3 shrink-0 opacity-70" />
+                          <span className="truncate">{entry.venue}</span>
+                        </div>
+
+                        {entry.lecturer ? (
+                          <div className="mt-1 flex items-center gap-1.5 text-[11px] opacity-70">
+                            <User className="h-3 w-3 shrink-0 opacity-70" />
+                            <span className="truncate">{entry.lecturer}</span>
                           </div>
-                        )}
-                      </td>
+                        ) : null}
+                      </div>
                     );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  })
+                )}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );
@@ -137,28 +125,22 @@ export function TimetableGrid({ entries, course }: TimetableGridProps) {
 
 export function TimetableGridSkeleton() {
   return (
-    <div className="rounded-xl border border-border overflow-hidden animate-pulse">
-      <div className="border-b border-border bg-muted/40 grid grid-cols-6">
-        <div className="h-10 border-r border-border" />
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-10 border-r border-border last:border-r-0" />
+    <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm animate-pulse">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, col) => (
+          <div key={col} className="rounded-2xl border border-border bg-muted/30 p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div className="h-4 w-24 rounded bg-muted" />
+              <div className="h-3 w-6 rounded bg-muted" />
+            </div>
+            <div className="mt-3 space-y-2">
+              {Array.from({ length: 3 }).map((__, row) => (
+                <div key={row} className="h-20 rounded-2xl bg-muted/70" />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="grid grid-cols-6 border-b border-border last:border-b-0">
-          <div className="h-16 border-r border-border px-3 py-3 flex items-center gap-2">
-            <div className="h-2.5 w-2.5 rounded-full bg-muted" />
-            <div className="h-3 w-14 rounded bg-muted" />
-          </div>
-          {Array.from({ length: 5 }).map((_, j) => (
-            <div key={j} className="h-16 border-r border-border last:border-r-0 p-2">
-              {(i + j) % 3 !== 0 && (
-                <div className="h-full rounded-lg bg-muted/60" />
-              )}
-            </div>
-          ))}
-        </div>
-      ))}
     </div>
   );
 }
@@ -267,7 +249,10 @@ export function TimetableLegend({
                 <p className="px-3 py-4 text-center text-xs text-muted-foreground">No groups match</p>
               ) : (
                 filtered.map((section) => {
-                  const color = getSubjectColor(section || course);
+                  const firstInSection = entries.find((e) => e.section === section);
+                  const colorKey =
+                    firstInSection?.subjectKey || firstInSection?.course || section || course;
+                  const color = getSubjectColor(colorKey);
                   const checked = !hasFilter || selectedSections.has(section);
                   return (
                     <label
@@ -296,7 +281,10 @@ export function TimetableLegend({
       {hasFilter && (
         <div className="flex flex-wrap gap-1.5">
           {[...selectedSections].map((section) => {
-            const color = getSubjectColor(section || course);
+            const firstInSection = entries.find((e) => e.section === section);
+            const colorKey =
+              firstInSection?.subjectKey || firstInSection?.course || section || course;
+            const color = getSubjectColor(colorKey);
             return (
               <span
                 key={section}

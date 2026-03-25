@@ -45,11 +45,13 @@ export function TimetableTable({ entries, course }: TimetableTableProps) {
           </thead>
           <tbody>
             {sorted.map((entry, idx) => {
-              const color = getSubjectColor(entry.section || course);
+              const color = getSubjectColor(entry.subjectKey || entry.course || entry.section || course);
               return (
                 <tr
                   key={`${entry.day}-${entry.start}-${entry.section}-${idx}`}
-                  className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/30"
+                  className={`border-b border-border last:border-b-0 transition-colors hover:bg-muted/30 ${
+                    entry.isClash ? "bg-destructive/5" : ""
+                  }`}
                 >
                   <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
                     {entry.day}
@@ -60,7 +62,11 @@ export function TimetableTable({ entries, course }: TimetableTableProps) {
                   <td className="px-4 py-3">
                     <Badge
                       variant="outline"
-                      className={`${color.bg} ${color.border} ${color.text} font-mono text-xs`}
+                      className={`font-mono text-xs ${
+                        entry.isClash
+                          ? "bg-destructive/10 border-destructive/50 text-destructive"
+                          : `${color.bg} ${color.border} ${color.text}`
+                      }`}
                     >
                       {entry.section || "—"}
                     </Badge>

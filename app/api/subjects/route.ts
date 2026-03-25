@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchTimetable } from "@/lib/scraper";
+import { getMainPageInfo, searchSubjects } from "@/lib/scraper";
 import { NO_FACULTY_CAMPUS_CODES } from "@/lib/constants";
 import type { SearchRequest } from "@/lib/types";
 
@@ -29,20 +29,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await searchTimetable({
+    const info = await getMainPageInfo();
+    const results = await searchSubjects(info, {
       campus: campus.trim(),
       faculty: (faculty ?? "").trim(),
       course: course.trim(),
     });
 
-    if (result.entries.length === 0) {
-      return NextResponse.json(
-        { error: "No timetable found for the given course.", ...result },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(result);
+    return NextResponse.json({
+      course: course.trim().toUpperCase(),
+      results,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
 
@@ -60,10 +57,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error("[/api/search]", message);
+    console.error("[/api/subjects]", message);
     return NextResponse.json(
       { error: "An unexpected error occurred.", detail: message },
       { status: 500 }
     );
   }
 }
+
