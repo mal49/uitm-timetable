@@ -150,7 +150,8 @@ export default function Home() {
   const [subjectColorDrafts, setSubjectColorDrafts] = useState<Record<string, string>>({});
 
   const timetableRef = useRef<HTMLDivElement | null>(null);
-  // Export uses the currently visible timetable so JPG matches what the user sees.
+  const exportRef = useRef<HTMLDivElement | null>(null);
+  // Export captures an off-screen, fixed-width desktop tree so JPGs never rely on mobile layout.
 
   async function fetchSubjects(request: SearchRequest) {
     const res = await fetch("/api/subjects", {
@@ -310,7 +311,9 @@ export default function Home() {
 
   async function exportTimetable() {
     setExportError("");
-    const node = timetableRef.current;
+    // Always export using a fixed-width, desktop-layout tree (even on mobile).
+    // This avoids narrow/mobile layout captures that look broken when saved.
+    const node = exportRef.current ?? timetableRef.current;
     if (!node) {
       setExportError("Nothing to export yet.");
       return;
@@ -349,7 +352,11 @@ export default function Home() {
         link.click();
         link.remove();
       } finally {
-        URL.revokeObjectURL(url);
+        // Revoke after a short delay so the download has time to start.
+        // Immediate revocation can occasionally result in a broken/empty file.
+        window.setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 1500);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -479,6 +486,34 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Off-screen export tree (desktop width). */}
+      {combinedEntries.length > 0 ? (
+        <div
+          aria-hidden="true"
+          className="fixed left-[-10000px] top-0 pointer-events-none opacity-0"
+        >
+          <div
+            ref={exportRef}
+            // 1200px matches the app's comfortable desktop width and yields a horizontal JPG.
+            style={{ width: 1200 }}
+            className="bg-background p-4"
+          >
+            {viewMode === "grid" ? (
+              <TimetableGrid
+                entries={displayedEntries}
+                course="MY"
+                layoutDesktop
+                colorOverrides={subjectColorOverrides}
+              />
+            ) : (
+              <div className="w-full">
+                <TimetableTable entries={displayedEntries} course="MY" colorOverrides={subjectColorOverrides} />
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
