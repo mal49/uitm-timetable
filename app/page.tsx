@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { toBlob } from "html-to-image";
+import { useRef, useState } from "react";
 import {
   LayoutGrid,
   List,
@@ -123,9 +124,13 @@ export default function Home() {
   const [items, setItems] = useState<SubjectItem[]>([]);
   const [adding, setAdding] = useState(false);
   const [globalError, setGlobalError] = useState<string>("");
+  const [exportError, setExportError] = useState<string>("");
+  const [exporting, setExporting] = useState(false);
   const [showClashesOnly, setShowClashesOnly] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestMsg, setSuggestMsg] = useState<string>("");
+
+  const timetableRef = useRef<HTMLDivElement | null>(null);
 
   async function fetchSubjects(request: SearchRequest) {
     const res = await fetch("/api/subjects", {
@@ -274,6 +279,54 @@ export default function Home() {
 
   function removeItem(itemId: string) {
     setItems((prev) => prev.filter((it) => it.id !== itemId));
+  }
+
+  async function exportTimetable() {
+    setExportError("");
+    if (!timetableRef.current) {
+      setExportError("Nothing to export yet.");
+      return;
+    }
+
+    try {
+      setExporting(true);
+      const node = timetableRef.current;
+
+      // html-to-image supports `backgroundColor` so JPG never ends up transparent.
+      const bodyBg = typeof window !== "undefined" ? window.getComputedStyle(document.body).backgroundColor : "";
+      const backgroundColor = bodyBg && bodyBg !== "rgba(0, 0, 0, 0)" ? bodyBg : "#ffffff";
+
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const baseName = `uitm-timetable-${stamp}-${viewMode}`;
+
+      const common = {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor,
+        // Avoid html-to-image font embedding crashes when a font is missing/undefined.
+        skipFonts: true,
+      };
+
+      const blob = await toBlob(node, { ...common, type: "image/jpeg", quality: 0.95 });
+      if (!blob) throw new Error("Failed to render JPG image.");
+
+      const url = URL.createObjectURL(blob);
+      try {
+        const link = document.createElement("a");
+        link.download = `${baseName}.jpg`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setExportError(msg || "Failed to export timetable.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function handleSuggestCombo() {
@@ -682,26 +735,40 @@ export default function Home() {
                     </span>
                   ) : null}
                 </p>
+                {exportError ? <p className="text-xs text-destructive mt-1">{exportError}</p> : null}
               </div>
 
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                  <Button
+                    variant={viewMode === "grid" ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("grid")}
+                    className="gap-1.5 h-8 px-3"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                    Week
+                  </Button>
+                  <Button
+                    variant={viewMode === "table" ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("table")}
+                    className="gap-1.5 h-8 px-3"
+                  >
+                    <List className="h-3.5 w-3.5" />
+                    List
+                  </Button>
+                </div>
+
                 <Button
-                  variant={viewMode === "grid" ? "secondary" : "ghost"}
+                  variant="secondary"
                   size="sm"
-                  onClick={() => setViewMode("grid")}
-                  className="gap-1.5 h-8 px-3"
+                  onClick={() => exportTimetable()}
+                  disabled={exporting}
+                  className="gap-2"
                 >
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                  Week
-                </Button>
-                <Button
-                  variant={viewMode === "table" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("table")}
-                  className="gap-1.5 h-8 px-3"
-                >
-                  <List className="h-3.5 w-3.5" />
-                  List
+                  {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Export JPG
                 </Button>
               </div>
             </div>
@@ -718,7 +785,9 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-                <TimetableGrid entries={displayedEntries} course="MY" />
+                <div ref={timetableRef}>
+                  <TimetableGrid entries={displayedEntries} course="MY" />
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
@@ -732,7 +801,9 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-                <TimetableTable entries={displayedEntries} course="MY" />
+                <div ref={timetableRef}>
+                  <TimetableTable entries={displayedEntries} course="MY" />
+                </div>
               </div>
             )}
           </div>
