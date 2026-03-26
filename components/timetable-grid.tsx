@@ -8,6 +8,20 @@ import type { TimetableEntry } from "@/lib/types";
 interface TimetableGridProps {
   entries: TimetableEntry[];
   course: string;
+  /** Five weekday columns regardless of viewport (e.g. mobile JPG export). */
+  layoutDesktop?: boolean;
+  colorOverrides?: Record<string, string>;
+}
+
+function hexToRgb(hex: string) {
+  const normalized = hex.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+  const int = Number.parseInt(normalized, 16);
+  return {
+    r: (int >> 16) & 255,
+    g: (int >> 8) & 255,
+    b: int & 255,
+  };
 }
 
 function timeToMinutes(time: string) {
@@ -15,7 +29,12 @@ function timeToMinutes(time: string) {
   return (h ?? 0) * 60 + (m ?? 0);
 }
 
-export function TimetableGrid({ entries, course }: TimetableGridProps) {
+export function TimetableGrid({
+  entries,
+  course,
+  layoutDesktop = false,
+  colorOverrides,
+}: TimetableGridProps) {
   const activeDays = WEEKDAYS.filter((day) => entries.some((e) => e.day === day));
   const days = activeDays.length > 0 ? activeDays : WEEKDAYS;
 
@@ -41,14 +60,24 @@ export function TimetableGrid({ entries, course }: TimetableGridProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm">
-      <div className="grid gap-3 sm:gap-4 md:grid-cols-5">
+    <div
+      className={`rounded-2xl border border-border bg-card shadow-sm ${
+        layoutDesktop ? "p-4" : "p-3 sm:p-4"
+      }`}
+    >
+      <div
+        className={`grid ${
+          layoutDesktop ? "gap-4" : "gap-3 sm:gap-4"
+        } ${layoutDesktop ? "grid-cols-5" : "md:grid-cols-5"}`}
+      >
         {days.map((day) => {
           const dayEntries = byDay.get(day) ?? [];
           return (
             <section
               key={day}
-              className="rounded-2xl border border-border bg-muted/30 p-3 sm:p-4"
+              className={`rounded-2xl border border-border bg-muted/30 ${
+                layoutDesktop ? "p-4" : "p-3 sm:p-4"
+              }`}
             >
               <header className="flex items-baseline justify-between gap-2">
                 <h3 className="text-sm font-semibold tracking-tight text-foreground">
@@ -68,6 +97,8 @@ export function TimetableGrid({ entries, course }: TimetableGridProps) {
                   dayEntries.map((entry, i) => {
                     const colorKey =
                       entry.subjectKey || entry.course || entry.section || course || "SUBJECT";
+                    const overrideHex = colorOverrides?.[colorKey];
+                    const rgb = overrideHex ? hexToRgb(overrideHex) : null;
                     const color = getSubjectColor(colorKey);
                     const title = (entry.course || entry.subjectKey || course || "SUBJECT").trim();
 
@@ -77,8 +108,19 @@ export function TimetableGrid({ entries, course }: TimetableGridProps) {
                         className={`group relative overflow-hidden rounded-2xl border px-3 py-2.5 shadow-sm transition-transform will-change-transform hover:-translate-y-px ${
                           entry.isClash
                             ? "border-destructive/50 bg-destructive/10 text-destructive"
-                            : `${color.bg} ${color.border} ${color.text}`
+                            : rgb
+                              ? ""
+                              : `${color.bg} ${color.border} ${color.text}`
                         }`}
+                        style={
+                          !entry.isClash && rgb
+                            ? {
+                                backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.18)`,
+                                borderColor: overrideHex,
+                                color: overrideHex,
+                              }
+                            : undefined
+                        }
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">

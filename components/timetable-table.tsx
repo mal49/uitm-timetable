@@ -8,6 +8,18 @@ import type { TimetableEntry } from "@/lib/types";
 interface TimetableTableProps {
   entries: TimetableEntry[];
   course: string;
+  colorOverrides?: Record<string, string>;
+}
+
+function hexToRgb(hex: string) {
+  const normalized = hex.replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+  const int = Number.parseInt(normalized, 16);
+  return {
+    r: (int >> 16) & 255,
+    g: (int >> 8) & 255,
+    b: int & 255,
+  };
 }
 
 function timeToMinutes(time: string) {
@@ -15,7 +27,7 @@ function timeToMinutes(time: string) {
   return (h ?? 0) * 60 + (m ?? 0);
 }
 
-export function TimetableTable({ entries, course }: TimetableTableProps) {
+export function TimetableTable({ entries, course, colorOverrides }: TimetableTableProps) {
   const sorted = [...entries].sort((a, b) => {
     const dayOrder =
       DAYS_OF_WEEK.indexOf(a.day as (typeof DAYS_OF_WEEK)[number]) -
@@ -45,7 +57,10 @@ export function TimetableTable({ entries, course }: TimetableTableProps) {
           </thead>
           <tbody>
             {sorted.map((entry, idx) => {
-              const color = getSubjectColor(entry.subjectKey || entry.course || entry.section || course);
+              const colorKey = entry.subjectKey || entry.course || entry.section || course;
+              const overrideHex = colorOverrides?.[colorKey];
+              const rgb = overrideHex ? hexToRgb(overrideHex) : null;
+              const color = getSubjectColor(colorKey);
               return (
                 <tr
                   key={`${entry.day}-${entry.start}-${entry.section}-${idx}`}
@@ -65,8 +80,19 @@ export function TimetableTable({ entries, course }: TimetableTableProps) {
                       className={`font-mono text-xs ${
                         entry.isClash
                           ? "bg-destructive/10 border-destructive/50 text-destructive"
-                          : `${color.bg} ${color.border} ${color.text}`
+                          : rgb
+                            ? ""
+                            : `${color.bg} ${color.border} ${color.text}`
                       }`}
+                      style={
+                        !entry.isClash && rgb
+                          ? {
+                              backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.18)`,
+                              borderColor: overrideHex,
+                              color: overrideHex,
+                            }
+                          : undefined
+                      }
                     >
                       {entry.section || "—"}
                     </Badge>

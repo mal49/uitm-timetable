@@ -49,6 +49,17 @@ type SubjectItem = {
   showSelectedOnly: boolean;
 };
 
+const PRESET_SUBJECT_HEX = [
+  "#3b82f6",
+  "#10b981",
+  "#8b5cf6",
+  "#f59e0b",
+  "#f43f5e",
+  "#06b6d4",
+  "#f97316",
+  "#14b8a6",
+] as const;
+
 function makeId() {
   return Math.random().toString(16).slice(2);
 }
@@ -119,6 +130,12 @@ function findClashingEntryKeys(entries: TimetableEntry[]) {
   return clashes;
 }
 
+function normalizeHexColor(value: string) {
+  const trimmed = value.trim();
+  const withHash = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+  return /^#[0-9a-fA-F]{6}$/.test(withHash) ? withHash.toLowerCase() : null;
+}
+
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [items, setItems] = useState<SubjectItem[]>([]);
@@ -129,8 +146,11 @@ export default function Home() {
   const [showClashesOnly, setShowClashesOnly] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestMsg, setSuggestMsg] = useState<string>("");
+  const [subjectColorOverrides, setSubjectColorOverrides] = useState<Record<string, string>>({});
+  const [subjectColorDrafts, setSubjectColorDrafts] = useState<Record<string, string>>({});
 
   const timetableRef = useRef<HTMLDivElement | null>(null);
+  // Export uses the currently visible timetable so JPG matches what the user sees.
 
   async function fetchSubjects(request: SearchRequest) {
     const res = await fetch("/api/subjects", {
@@ -281,16 +301,23 @@ export default function Home() {
     setItems((prev) => prev.filter((it) => it.id !== itemId));
   }
 
+  function setSubjectColor(course: string, hexColor: string) {
+    const normalized = normalizeHexColor(hexColor);
+    if (!normalized) return;
+    setSubjectColorOverrides((prev) => ({ ...prev, [course]: normalized }));
+    setSubjectColorDrafts((prev) => ({ ...prev, [course]: normalized }));
+  }
+
   async function exportTimetable() {
     setExportError("");
-    if (!timetableRef.current) {
+    const node = timetableRef.current;
+    if (!node) {
       setExportError("Nothing to export yet.");
       return;
     }
 
     try {
       setExporting(true);
-      const node = timetableRef.current;
 
       // html-to-image supports `backgroundColor` so JPG never ends up transparent.
       const bodyBg = typeof window !== "undefined" ? window.getComputedStyle(document.body).backgroundColor : "";
@@ -306,6 +333,9 @@ export default function Home() {
         // Avoid html-to-image font embedding crashes when a font is missing/undefined.
         skipFonts: true,
       };
+
+      // Wait one frame so off-screen export tree has laid out (especially on mobile).
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
 
       const blob = await toBlob(node, { ...common, type: "image/jpeg", quality: 0.95 });
       if (!blob) throw new Error("Failed to render JPG image.");
@@ -535,7 +565,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="max-h-[520px] overflow-y-auto pr-2 -mr-2 grid gap-3 md:grid-cols-2">
               {items.map((it) => {
                 const groups = groupKeys(it.grouped);
                 const hasGroups = groups.length > 0;
@@ -559,15 +589,75 @@ export default function Home() {
                         </p>
                       </div>
 
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeItem(it.id)}
-                        className="gap-2 self-start"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Remove
-                      </Button>
+                      <div className="flex items-start gap-3 self-start">
+                        <div className="rounded-lg border border-border bg-muted/30 px-2.5 py-2">
+                          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                            Color
+                          </p>
+                          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                            {PRESET_SUBJECT_HEX.map((hex, idx) => {
+                              const selected =
+                                (subjectColorOverrides[it.course] ?? "").toLowerCase() === hex.toLowerCase();
+                              return (
+                                <button
+                                  key={`${it.course}-color-${idx}`}
+                                  type="button"
+                                  onClick={() => setSubjectColor(it.course, hex)}
+                                  aria-label={`Set ${it.course} color ${idx + 1}`}
+                                  style={{ backgroundColor: hex, borderColor: hex }}
+                                  className={`h-4 w-4 rounded-full border transition-transform hover:scale-110 ${
+                                    selected ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
+                                  }`}
+                                />
+                              );
+                            })}
+                            <label className="relative inline-flex h-5 w-5 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-border bg-background">
+                              <span
+                                className="h-3.5 w-3.5 rounded-sm border border-border/60"
+                                style={{ backgroundColor: subjectColorOverrides[it.course] ?? "#14b8a6" }}
+                              />
+                              <input
+                                type="color"
+                                value={subjectColorOverrides[it.course] ?? "#14b8a6"}
+                                onChange={(e) => setSubjectColor(it.course, e.target.value)}
+                                className="absolute inset-0 cursor-pointer opacity-0"
+                                aria-label={`Pick custom color for ${it.course}`}
+                              />
+                            </label>
+                          </div>
+                          <input
+                            type="text"
+                            inputMode="text"
+                            value={subjectColorDrafts[it.course] ?? subjectColorOverrides[it.course] ?? ""}
+                            placeholder="#22c55e"
+                            onChange={(e) =>
+                              setSubjectColorDrafts((prev) => ({ ...prev, [it.course]: e.target.value }))
+                            }
+                            onBlur={(e) => {
+                              const normalized = normalizeHexColor(e.target.value);
+                              if (normalized) {
+                                setSubjectColor(it.course, normalized);
+                                return;
+                              }
+                              setSubjectColorDrafts((prev) => ({
+                                ...prev,
+                                [it.course]: subjectColorOverrides[it.course] ?? "",
+                              }));
+                            }}
+                            className="mt-2 h-7 w-28 rounded-md border border-input bg-background px-2 text-[11px] font-mono"
+                            aria-label={`Hex color for ${it.course}`}
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeItem(it.id)}
+                          className="gap-2 self-start"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Remove
+                        </Button>
+                      </div>
                     </div>
 
                     {it.status === "loading_subjects" && (
@@ -786,7 +876,11 @@ export default function Home() {
                   </div>
                 )}
                 <div ref={timetableRef}>
-                  <TimetableGrid entries={displayedEntries} course="MY" />
+                  <TimetableGrid
+                    entries={displayedEntries}
+                    course="MY"
+                    colorOverrides={subjectColorOverrides}
+                  />
                 </div>
               </div>
             ) : (
@@ -802,10 +896,15 @@ export default function Home() {
                   </div>
                 )}
                 <div ref={timetableRef}>
-                  <TimetableTable entries={displayedEntries} course="MY" />
+                  <TimetableTable
+                    entries={displayedEntries}
+                    course="MY"
+                    colorOverrides={subjectColorOverrides}
+                  />
                 </div>
               </div>
             )}
+
           </div>
         )}
       </main>
