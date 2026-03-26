@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   description: "Search and view UiTM class timetables by campus, faculty, and course code.",
 };
 
+export const viewport = "width=device-width, initial-scale=1, maximum-scale=5";
+
 export default function RootLayout({
   children,
 }: Readonly<{

@@ -20,6 +20,7 @@ import { SearchForm } from "@/components/search-form";
 import { TimetableGrid, TimetableGridSkeleton } from "@/components/timetable-grid";
 import { TimetableTable } from "@/components/timetable-table";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { WallpaperMaker } from "@/components/wallpaper-maker-v2/wallpaper-maker";
 import { Input } from "@/components/ui/input";
 import type {
   GroupedTimetable,
@@ -516,36 +517,36 @@ export default function Home() {
 
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-              <GraduationCap className="h-4 w-4 text-primary-foreground" />
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 h-12 sm:h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-primary flex items-center justify-center">
+              <GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-sm tracking-tight">UiTM Timetable</span>
+            <span className="font-semibold text-xs sm:text-sm tracking-tight">UiTM Timetable</span>
           </div>
           <ThemeToggle />
         </div>
       </header>
 
       {/* Main */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-10 space-y-8">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-10 space-y-6 sm:space-y-8">
 
         {/* Hero */}
         <div className="space-y-1.5">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Build Your Timetable
           </h1>
-          <p className="text-muted-foreground text-sm sm:text-base max-w-xl">
+          <p className="text-muted-foreground text-xs sm:text-sm md:text-base max-w-xl">
             Add your subjects, pick the right timetable result, then select your groups to build a custom schedule.
           </p>
         </div>
 
         {/* Add subject */}
-        <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
+        <div className="rounded-lg sm:rounded-xl border border-border bg-card p-4 sm:p-5 md:p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-3 sm:gap-4 flex-col sm:flex-row">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">Add a subject</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs sm:text-sm font-semibold text-foreground">Add a subject</p>
+              <p className="text-[11px] sm:text-xs text-muted-foreground">
                 Use the same campus/faculty for your current semester, then add multiple course codes.
               </p>
             </div>
@@ -554,17 +555,17 @@ export default function Home() {
               Add as many as you want
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-3 sm:mt-4">
             <SearchForm onSubmit={handleAddSubject} isLoading={adding} />
           </div>
         </div>
 
         {globalError && (
-          <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-5 py-6 flex items-start gap-4">
-            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div className="rounded-lg sm:rounded-xl border border-destructive/40 bg-destructive/5 px-4 sm:px-5 py-4 sm:py-6 flex items-start gap-3 sm:gap-4">
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="font-semibold text-destructive text-sm">Something went wrong</p>
-              <p className="text-sm text-muted-foreground">{globalError}</p>
+              <p className="font-semibold text-destructive text-xs sm:text-sm">Something went wrong</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">{globalError}</p>
             </div>
           </div>
         )}
@@ -572,35 +573,36 @@ export default function Home() {
         {/* Subject list */}
         {items.length > 0 && (
           <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-3">
               <div>
-                <h2 className="text-sm font-semibold text-foreground">Your subjects</h2>
-                <p className="text-xs text-muted-foreground">
+                <h2 className="text-xs sm:text-sm font-semibold text-foreground">Your subjects</h2>
+                <p className="text-[11px] sm:text-xs text-muted-foreground">
                   Select the correct subject result (if needed), then choose your group(s).
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 {suggestMsg ? (
-                  <span className="text-xs text-muted-foreground">{suggestMsg}</span>
+                  <span className="text-[11px] sm:text-xs text-muted-foreground hidden sm:inline">{suggestMsg}</span>
                 ) : null}
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={handleSuggestCombo}
                   disabled={suggesting}
-                  className="gap-2"
+                  className="gap-2 text-xs h-8 px-3"
                 >
                   {suggesting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                   ) : (
-                    <Wand2 className="h-4 w-4" />
+                    <Wand2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   )}
-                  Find combo
+                  <span className="hidden sm:inline">Find combo</span>
+                  <span className="sm:hidden">Combo</span>
                 </Button>
               </div>
             </div>
 
-            <div className="max-h-[520px] overflow-y-auto pr-2 -mr-2 grid gap-3 md:grid-cols-2">
+            <div className="max-h-[520px] overflow-y-auto pr-1 sm:pr-2 -mr-1 sm:-mr-2 grid gap-3 lg:grid-cols-2">
               {items.map((it) => {
                 const groups = groupKeys(it.grouped);
                 const hasGroups = groups.length > 0;
@@ -608,28 +610,28 @@ export default function Home() {
                 const ready = it.status === "ready";
 
                 return (
-                  <div key={it.id} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                  <div key={it.id} className="rounded-lg sm:rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-sm">{it.course}</span>
+                          <span className="font-mono font-bold text-xs sm:text-sm">{it.course}</span>
                           {it.subjectName && it.subjectName !== it.course ? (
-                            <span className="text-sm text-muted-foreground">{it.subjectName}</span>
+                            <span className="text-xs sm:text-sm text-muted-foreground break-all">{it.subjectName}</span>
                           ) : null}
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">
                           Campus: <span className="font-mono">{it.request.campus}</span>
                           {" · "}
                           Faculty: <span className="font-mono">{it.request.faculty || "—"}</span>
                         </p>
                       </div>
 
-                      <div className="flex items-start gap-3 self-start">
-                        <div className="rounded-lg border border-border bg-muted/30 px-2.5 py-2">
-                          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      <div className="flex items-start gap-2 sm:gap-3 self-start">
+                        <div className="rounded-lg border border-border bg-muted/30 px-2 sm:px-2.5 py-1.5 sm:py-2">
+                          <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                             Color
                           </p>
-                          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                          <div className="mt-1 sm:mt-1.5 flex items-center gap-1 sm:gap-1.5 flex-wrap">
                             {PRESET_SUBJECT_HEX.map((hex, idx) => {
                               const selected =
                                 (subjectColorOverrides[it.course] ?? "").toLowerCase() === hex.toLowerCase();
@@ -640,15 +642,15 @@ export default function Home() {
                                   onClick={() => setSubjectColor(it.course, hex)}
                                   aria-label={`Set ${it.course} color ${idx + 1}`}
                                   style={{ backgroundColor: hex, borderColor: hex }}
-                                  className={`h-4 w-4 rounded-full border transition-transform hover:scale-110 ${
+                                  className={`h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-full border transition-transform hover:scale-110 ${
                                     selected ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
                                   }`}
                                 />
                               );
                             })}
-                            <label className="relative inline-flex h-5 w-5 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-border bg-background">
+                            <label className="relative inline-flex h-4 w-4 sm:h-5 sm:w-5 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-border bg-background">
                               <span
-                                className="h-3.5 w-3.5 rounded-sm border border-border/60"
+                                className="h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-sm border border-border/60"
                                 style={{ backgroundColor: subjectColorOverrides[it.course] ?? "#14b8a6" }}
                               />
                               <input
@@ -910,7 +912,7 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-                <div ref={timetableRef}>
+                <div ref={timetableRef} className="mx-auto w-full max-w-5xl">
                   <TimetableGrid
                     entries={displayedEntries}
                     course="MY"
@@ -930,7 +932,7 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-                <div ref={timetableRef}>
+                <div ref={timetableRef} className="mx-auto w-full max-w-5xl">
                   <TimetableTable
                     entries={displayedEntries}
                     course="MY"
@@ -939,6 +941,10 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            <div className="pt-2">
+              <WallpaperMaker entries={displayedEntries} colorOverrides={subjectColorOverrides} />
+            </div>
 
           </div>
         )}

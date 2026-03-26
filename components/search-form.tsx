@@ -43,11 +43,11 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
   const canSubmit = campus && (!facultyRequired || faculty) && course.trim();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="grid gap-5 sm:grid-cols-3">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+      <div className="grid gap-3 sm:gap-4 md:gap-5 grid-cols-1 sm:grid-cols-3">
         {/* Campus */}
         <div className="space-y-2">
-          <Label htmlFor="campus" className="text-sm font-medium">
+          <Label htmlFor="campus" className="text-xs sm:text-sm font-medium">
             Campus
           </Label>
           <Combobox

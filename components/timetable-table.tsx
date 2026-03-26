@@ -9,6 +9,11 @@ interface TimetableTableProps {
   entries: TimetableEntry[];
   course: string;
   colorOverrides?: Record<string, string>;
+  variant?: "desktop" | "wallpaper";
+  showTime?: boolean;
+  showVenue?: boolean;
+  showLecturer?: boolean;
+  showIcons?: boolean;
 }
 
 function hexToRgb(hex: string) {
@@ -27,7 +32,17 @@ function timeToMinutes(time: string) {
   return (h ?? 0) * 60 + (m ?? 0);
 }
 
-export function TimetableTable({ entries, course, colorOverrides }: TimetableTableProps) {
+export function TimetableTable({
+  entries,
+  course,
+  colorOverrides,
+  variant = "desktop",
+  showTime = true,
+  showVenue = true,
+  showLecturer = true,
+  showIcons = true,
+}: TimetableTableProps) {
+  const isWallpaper = variant === "wallpaper";
   const sorted = [...entries].sort((a, b) => {
     const dayOrder =
       DAYS_OF_WEEK.indexOf(a.day as (typeof DAYS_OF_WEEK)[number]) -
@@ -38,21 +53,49 @@ export function TimetableTable({ entries, course, colorOverrides }: TimetableTab
 
   if (sorted.length === 0) {
     return (
-      <p className="text-center text-muted-foreground py-8">No entries to display.</p>
+      <p
+        className={`text-center py-8 ${isWallpaper ? "text-white/70" : "text-muted-foreground"}`}
+      >
+        No entries to display.
+      </p>
     );
   }
 
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
+    <div
+      className={`overflow-hidden ${
+        isWallpaper ? "bg-transparent border-0 rounded-[28px]" : "rounded-xl border border-border"
+      }`}
+    >
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className={`w-full ${isWallpaper ? "text-[12px]" : "text-sm"}`}>
           <thead>
-            <tr className="bg-muted/60 border-b border-border">
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Day</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Time</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Section</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Venue</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Lecturer</th>
+            <tr
+              className={`${
+                isWallpaper ? "bg-black/10" : "bg-muted/60 border-b border-border"
+              } ${isWallpaper ? "" : "border-b border-border"}`}
+            >
+              <th className={`px-4 py-3 text-left ${isWallpaper ? "text-white/85" : "text-muted-foreground"} font-semibold`}>
+                Day
+              </th>
+              {showTime ? (
+                <th className={`px-4 py-3 text-left ${isWallpaper ? "text-white/85" : "text-muted-foreground"} font-semibold`}>
+                  Time
+                </th>
+              ) : null}
+              <th className={`px-4 py-3 text-left ${isWallpaper ? "text-white/85" : "text-muted-foreground"} font-semibold`}>
+                Section
+              </th>
+              {showVenue ? (
+                <th className={`px-4 py-3 text-left ${isWallpaper ? "text-white/85" : "text-muted-foreground"} font-semibold`}>
+                  Venue
+                </th>
+              ) : null}
+              {showLecturer ? (
+                <th className={`px-4 py-3 text-left ${isWallpaper ? "text-white/85" : "text-muted-foreground"} font-semibold`}>
+                  Lecturer
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -64,16 +107,28 @@ export function TimetableTable({ entries, course, colorOverrides }: TimetableTab
               return (
                 <tr
                   key={`${entry.day}-${entry.start}-${entry.section}-${idx}`}
-                  className={`border-b border-border last:border-b-0 transition-colors hover:bg-muted/30 ${
+                  className={`${
+                    isWallpaper ? "border-white/10" : "border-border"
+                  } border-b last:border-b-0 ${isWallpaper ? "" : "transition-colors hover:bg-muted/30"} ${
                     entry.isClash ? "bg-destructive/5" : ""
                   }`}
                 >
-                  <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
+                  <td
+                    className={`px-4 py-3 font-medium whitespace-nowrap ${
+                      isWallpaper ? "text-white/90" : "text-foreground"
+                    }`}
+                  >
                     {entry.day}
                   </td>
-                  <td className="px-4 py-3 font-mono text-sm text-foreground whitespace-nowrap">
-                    {entry.start} – {entry.end}
-                  </td>
+                  {showTime ? (
+                    <td
+                      className={`px-4 py-3 font-mono text-sm whitespace-nowrap ${
+                        isWallpaper ? "text-white/90" : "text-foreground"
+                      }`}
+                    >
+                      {entry.start} – {entry.end}
+                    </td>
+                  ) : null}
                   <td className="px-4 py-3">
                     <Badge
                       variant="outline"
@@ -97,22 +152,34 @@ export function TimetableTable({ entries, course, colorOverrides }: TimetableTab
                       {entry.section || "—"}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5 shrink-0" />
-                      {entry.venue}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {entry.lecturer ? (
-                      <span className="flex items-center gap-1.5 text-muted-foreground">
-                        <User className="h-3.5 w-3.5 shrink-0" />
-                        {entry.lecturer}
+                  {showVenue ? (
+                    <td className="px-4 py-3">
+                      <span
+                        className={`flex items-center gap-1.5 truncate ${
+                          isWallpaper ? "text-white/80" : "text-muted-foreground"
+                        }`}
+                      >
+                        {showIcons ? <MapPin className="h-3.5 w-3.5 shrink-0" /> : null}
+                        {entry.venue}
                       </span>
-                    ) : (
-                      <span className="text-muted-foreground/50">—</span>
-                    )}
-                  </td>
+                    </td>
+                  ) : null}
+                  {showLecturer ? (
+                    <td className="px-4 py-3">
+                      {entry.lecturer ? (
+                        <span
+                          className={`flex items-center gap-1.5 truncate ${
+                            isWallpaper ? "text-white/80" : "text-muted-foreground"
+                          }`}
+                        >
+                          {showIcons ? <User className="h-3.5 w-3.5 shrink-0" /> : null}
+                          {entry.lecturer}
+                        </span>
+                      ) : (
+                        <span className={`${isWallpaper ? "text-white/50" : "text-muted-foreground/50"}`}>—</span>
+                      )}
+                    </td>
+                  ) : null}
                 </tr>
               );
             })}

@@ -11,6 +11,11 @@ interface TimetableGridProps {
   /** Five weekday columns regardless of viewport (e.g. mobile JPG export). */
   layoutDesktop?: boolean;
   colorOverrides?: Record<string, string>;
+  variant?: "desktop" | "wallpaper";
+  showTime?: boolean;
+  showVenue?: boolean;
+  showLecturer?: boolean;
+  showIcons?: boolean;
 }
 
 function hexToRgb(hex: string) {
@@ -34,7 +39,13 @@ export function TimetableGrid({
   course,
   layoutDesktop = false,
   colorOverrides,
+  variant = "desktop",
+  showTime = true,
+  showVenue = true,
+  showLecturer = true,
+  showIcons = true,
 }: TimetableGridProps) {
+  const isWallpaper = variant === "wallpaper";
   const activeDays = WEEKDAYS.filter((day) => entries.some((e) => e.day === day));
   const days = activeDays.length > 0 ? activeDays : WEEKDAYS;
 
@@ -53,7 +64,12 @@ export function TimetableGrid({
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
+      <div
+        className={`text-center text-sm ${
+          isWallpaper ? "bg-transparent border-0 text-white/70" : "rounded-2xl border border-border bg-card text-muted-foreground"
+        }`}
+        style={isWallpaper ? { padding: 24 } : undefined}
+      >
         No sessions to display.
       </div>
     );
@@ -61,34 +77,58 @@ export function TimetableGrid({
 
   return (
     <div
-      className={`rounded-2xl border border-border bg-card shadow-sm ${
-        layoutDesktop ? "p-4" : "p-3 sm:p-4"
-      }`}
+      className={`${
+        isWallpaper
+          ? "bg-transparent border-0 shadow-none"
+          : "rounded-2xl border border-border bg-card shadow-sm"
+      } ${isWallpaper ? "" : layoutDesktop ? "p-4" : "p-3 sm:p-4"}`}
     >
       <div
         className={`grid ${
-          layoutDesktop ? "gap-4" : "gap-3 sm:gap-4"
-        } ${layoutDesktop ? "grid-cols-5" : "md:grid-cols-5"}`}
+          isWallpaper ? "gap-2" : layoutDesktop ? "gap-4" : "gap-3 sm:gap-4"
+        } ${
+          layoutDesktop
+            ? "grid-cols-5"
+            : // On desktop, don't force 5 columns when only 1–2 days exist.
+              // Use one column on mobile, then shrink-wrap day columns and center.
+              "grid-cols-1 md:w-fit md:mx-auto"
+        }`}
+        style={
+          layoutDesktop
+            ? undefined
+            : {
+                // Fixed-ish column width keeps 1–2 day previews from stretching across the whole row.
+                gridTemplateColumns: `repeat(${days.length}, minmax(0, 18rem))`,
+              }
+        }
       >
         {days.map((day) => {
           const dayEntries = byDay.get(day) ?? [];
           return (
             <section
               key={day}
-              className={`rounded-2xl border border-border bg-muted/30 ${
-                layoutDesktop ? "p-4" : "p-3 sm:p-4"
-              }`}
+              className={`${
+                isWallpaper ? "border-0 bg-transparent" : "rounded-2xl border border-border bg-muted/30"
+              } ${isWallpaper ? "p-1" : layoutDesktop ? "p-4" : "p-3 sm:p-4"}`}
             >
               <header className="flex items-baseline justify-between gap-2">
-                <h3 className="text-sm font-semibold tracking-tight text-foreground">
+                <h3
+                  className={`${
+                    isWallpaper ? "text-white/90" : "text-foreground"
+                  } ${isWallpaper ? "text-[13px] font-bold" : "text-sm font-semibold"} `}
+                >
                   {day}
                 </h3>
-                <span className="text-[11px] text-muted-foreground">
-                  {dayEntries.length}
-                </span>
+                {!isWallpaper ? (
+                  <span className="text-[11px] text-muted-foreground">{dayEntries.length}</span>
+                ) : null}
               </header>
 
-              <div className="mt-3 space-y-2">
+              <div
+                className={`${isWallpaper ? "mt-2" : "mt-3"} ${
+                  isWallpaper ? "space-y-1.5" : "space-y-2"
+                }`}
+              >
                 {dayEntries.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-border/70 bg-background/50 px-3 py-4 text-center text-xs text-muted-foreground">
                     No class
@@ -105,7 +145,9 @@ export function TimetableGrid({
                     return (
                       <div
                         key={`${day}-${entry.start}-${entry.end}-${entry.section}-${i}`}
-                        className={`group relative overflow-hidden rounded-2xl border px-3 py-2.5 shadow-sm transition-transform will-change-transform hover:-translate-y-px ${
+                        className={`group relative overflow-hidden ${
+                          isWallpaper ? "rounded-2xl px-2 py-1.5 shadow-none" : "rounded-2xl border px-3 py-2.5 shadow-sm"
+                        } ${!isWallpaper ? "transition-transform will-change-transform hover:-translate-y-px" : ""} border ${
                           entry.isClash
                             ? "border-destructive/50 bg-destructive/10 text-destructive"
                             : rgb
@@ -125,30 +167,55 @@ export function TimetableGrid({
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-extrabold tracking-tight">
+                              <span
+                                className={`${
+                                  isWallpaper ? "text-[13px]" : "text-sm"
+                                } font-extrabold tracking-tight leading-tight`}
+                              >
                                 {title}
                               </span>
                               {entry.section ? (
-                                <span className="truncate text-[10px] font-medium opacity-70">
+                                <span className={`${isWallpaper ? "text-[10px]" : "text-[10px]"} truncate font-medium opacity-70`}>
                                   {entry.section.replace(title, "").trim() || entry.section}
                                 </span>
                               ) : null}
                             </div>
-                            <div className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold opacity-90">
-                              <Clock className="h-3 w-3 shrink-0 opacity-70" />
-                              <span className="tabular-nums">{entry.start}–{entry.end}</span>
-                            </div>
+
+                            {showTime ? (
+                              <div
+                                className={`${
+                                  isWallpaper ? "mt-1" : "mt-1"
+                                } flex items-center gap-1.5 ${isWallpaper ? "text-[10px]" : "text-[11px]"} font-semibold opacity-90`}
+                              >
+                                {showIcons ? (
+                                  <Clock className="h-3 w-3 shrink-0 opacity-70" />
+                                ) : null}
+                                <span className="tabular-nums">
+                                  {entry.start}–{entry.end}
+                                </span>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
 
-                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] opacity-80">
-                          <MapPin className="h-3 w-3 shrink-0 opacity-70" />
-                          <span className="truncate">{entry.venue}</span>
-                        </div>
+                        {showVenue ? (
+                          <div
+                            className={`mt-1.5 flex items-center gap-1.5 ${
+                              isWallpaper ? "text-[10px]" : "text-[11px]"
+                            } opacity-80`}
+                          >
+                            {showIcons ? <MapPin className="h-3 w-3 shrink-0 opacity-70" /> : null}
+                            <span className="truncate">{entry.venue}</span>
+                          </div>
+                        ) : null}
 
-                        {entry.lecturer ? (
-                          <div className="mt-1 flex items-center gap-1.5 text-[11px] opacity-70">
-                            <User className="h-3 w-3 shrink-0 opacity-70" />
+                        {showLecturer && entry.lecturer ? (
+                          <div
+                            className={`mt-1 flex items-center gap-1.5 ${
+                              isWallpaper ? "text-[10px]" : "text-[11px]"
+                            } opacity-70`}
+                          >
+                            {showIcons ? <User className="h-3 w-3 shrink-0 opacity-70" /> : null}
                             <span className="truncate">{entry.lecturer}</span>
                           </div>
                         ) : null}
