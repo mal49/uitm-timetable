@@ -2,6 +2,7 @@
 
 import {
   BookOpenText,
+  CalendarDays,
   CalendarRange,
   Clock3,
   Eye,
@@ -15,6 +16,7 @@ type VisibilityKey =
   | "showTime"
   | "showVenue"
   | "showDayLabels"
+  | "showWidgetPosition"
   | "showTimeIndicators";
 
 const visibilityItems: Array<{
@@ -46,6 +48,12 @@ const visibilityItems: Array<{
     label: "Day Labels",
     description: "Show weekday headers.",
     icon: CalendarRange,
+  },
+  {
+    key: "showWidgetPosition",
+    label: "Widget Position",
+    description: "Keep the lock screen widget marker visible.",
+    icon: CalendarDays,
   },
   {
     key: "showTimeIndicators",

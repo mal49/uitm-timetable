@@ -137,7 +137,7 @@ export function WallpaperProvider({
   }, [initialColorOverrides]);
 
   const updateSettings = useCallback((updates: Partial<WallpaperSettings>) => {
-    setSettings((prev) => ({ ...prev, ...updates, showWidgetPosition: true }));
+    setSettings((prev) => ({ ...prev, ...updates }));
   }, []);
 
   const resetSettings = useCallback(() => {
