@@ -383,7 +383,7 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
             color: tableHeaderText,
           }}
         >
-          {settings.titleText || "Untitled"}
+          {settings.titleText || "Class Canvas"}
         </div>
 
         <div

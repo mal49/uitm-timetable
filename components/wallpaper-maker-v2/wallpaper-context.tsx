@@ -91,7 +91,7 @@ const defaultSettings: WallpaperSettings = {
   autoContrast: true,
   fontSize: 1,
   fontWeight: "regular",
-  titleText: "My Timetable",
+  titleText: "Class Canvas",
   showCourseCode: true,
   showCourseName: false,
   showTime: true,

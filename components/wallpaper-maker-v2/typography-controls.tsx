@@ -17,7 +17,7 @@ export function TypographyControls() {
           id="title-text"
           value={settings.titleText}
           onChange={(e) => updateSettings({ titleText: e.target.value })}
-          placeholder="My Timetable"
+          placeholder="Class Canvas"
           className="h-8 text-xs"
         />
       </div>

@@ -1,4 +1,4 @@
-import { ExternalLink, GraduationCap } from "lucide-react";
+import { ExternalLink, Smartphone } from "lucide-react";
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
@@ -10,13 +10,13 @@ export function SiteFooter() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
             <div className="min-w-0 space-y-2">
               <div className="flex items-center gap-2.5">
-                <GraduationCap className="h-3.5 w-3.5 text-[#7df4c3]" />
+                <Smartphone className="h-3.5 w-3.5 text-[#7df4c3]" />
                 <p className="text-sm font-semibold tracking-tight text-white">
-                  UiTM Timetable Maker
+                  UiTM Class Canvas
                 </p>
               </div>
               <p className="max-w-xl text-sm leading-6 text-white/65">
-                Plan your semester, compare groups, and export a timetable without fighting the official portal.
+                Search your classes, lock in the right group combo, and export a schedule wallpaper that actually looks good.
               </p>
             </div>
 
@@ -41,9 +41,9 @@ export function SiteFooter() {
 
           <div className="flex flex-col gap-1.5 border-t border-white/10 pt-3 text-[11px] leading-5 text-white/45 sm:flex-row sm:items-center sm:justify-between sm:text-xs">
             <p className="max-w-2xl">
-              Unofficial UiTM timetable helper for students planning semester schedules.
+              Unofficial UiTM class schedule and wallpaper tool for students.
             </p>
-            <p className="shrink-0">© {year} UiTM Timetable Maker</p>
+            <p className="shrink-0">© {year} UiTM Class Canvas</p>
           </div>
         </div>
       </div>

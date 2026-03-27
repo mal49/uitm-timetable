@@ -61,7 +61,7 @@ export function AgendaStyle({ entries, colorOverrides }: AgendaStyleProps) {
         {/* Header */}
         <div className="mb-4 pb-3 border-b-2 border-slate-300">
           <h2 className="text-lg font-black text-slate-900 tracking-tight">
-            {settings.titleText || "My Timetable"}
+            {settings.titleText || "Class Canvas"}
           </h2>
           <p className="text-[10px] text-slate-500 mt-0.5 font-medium">
             Weekly Schedule

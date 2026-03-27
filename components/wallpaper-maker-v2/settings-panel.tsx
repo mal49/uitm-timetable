@@ -17,9 +17,9 @@ export function SettingsPanel() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="px-4 sm:px-5 py-4 border-b border-border">
-        <h2 className="text-lg font-bold text-slate-900">Wallpaper Designer</h2>
+        <h2 className="text-lg font-bold text-slate-900">Class Canvas Studio</h2>
         <p className="mt-0.5 text-xs text-slate-600">
-          Customize your timetable wallpaper
+          Customize the wallpaper version of your schedule
         </p>
       </div>
 

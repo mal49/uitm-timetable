@@ -7,7 +7,7 @@ import {
   List,
   AlertCircle,
   CalendarX2,
-  GraduationCap,
+  Smartphone,
   Plus,
   Trash2,
   Wand2,
@@ -328,7 +328,7 @@ export default function Home() {
       const backgroundColor = bodyBg && bodyBg !== "rgba(0, 0, 0, 0)" ? bodyBg : "#ffffff";
 
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-      const baseName = `uitm-timetable-${stamp}-${viewMode}`;
+      const baseName = `uitm-class-canvas-${stamp}-${viewMode}`;
 
       const common = {
         cacheBust: true,
@@ -519,10 +519,10 @@ export default function Home() {
       <header className="sticky top-0 z-30 px-4 pt-4 sm:px-6 sm:pt-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between rounded-[1.75rem] border border-white/55 bg-white/92 px-5 py-3 text-slate-900 shadow-[0_18px_40px_rgba(45,88,135,0.12)] backdrop-blur-xl sm:px-7 sm:py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100">
-              <GraduationCap className="h-4 w-4 text-sky-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-100 ring-1 ring-cyan-200">
+              <Smartphone className="h-4 w-4 text-cyan-700" />
             </div>
-            <span className="text-sm font-semibold tracking-tight sm:text-base">UiTM Timetable Maker</span>
+            <span className="text-sm font-semibold tracking-tight sm:text-base">UiTM Class Canvas</span>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -538,18 +538,18 @@ export default function Home() {
             <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/78 backdrop-blur-sm">
                 <span className="h-2 w-2 rounded-full bg-[#7df4c3]" />
-                Semester planner
+                Schedule wallpaper maker
               </div>
               <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl">
-                Timetable making
-                <span className="block text-[#7df4c3]">made easier</span>
+                Build your UiTM schedule
+                <span className="block text-[#7df4c3]">then turn it into a wallpaper</span>
               </h1>
               <p className="mt-4 max-w-lg text-sm leading-7 text-white/72 sm:text-base">
-                Search subjects, pick groups, and build your semester.
+                Search subjects, choose the right groups, and generate a custom wallpaper from your final class schedule.
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <div className="rounded-full bg-[#21d4cf] px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_10px_24px_rgba(33,212,207,0.24)]">
-                  Search timetable
+                  Start with your schedule
                 </div>
               </div>
             </div>
@@ -558,9 +558,9 @@ export default function Home() {
               <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-[0_26px_60px_rgba(5,10,25,0.18)] backdrop-blur-md sm:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-white">Start a new run</p>
+                    <p className="text-sm font-semibold text-white">Build your class canvas</p>
                     <p className="text-xs leading-5 text-white/65 sm:text-sm">
-                      Pick your campus, faculty, and course code to pull the latest timetable data.
+                      Pick your campus, faculty, and course code to pull in the schedule you want to turn into a wallpaper.
                     </p>
                   </div>
                   <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-black/15 px-3 py-1.5 text-xs text-white/65 lg:inline-flex">
@@ -594,9 +594,9 @@ export default function Home() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Subjects</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Build your party</h2>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Build your schedule</h2>
                     <p className="mt-1 text-sm leading-6 text-slate-600">
-                      Select the correct subject result, set the group, and customize its color on the timetable.
+                      Pick the right subject result, lock in your groups, and set colors before sending everything into the wallpaper maker.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -853,7 +853,7 @@ export default function Home() {
                     <CalendarX2 className="h-10 w-10 text-slate-300" />
                     <p className="mt-3 text-base font-semibold text-slate-900">No subjects added yet</p>
                     <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                      Add your first course code above to start building your timetable.
+                      Add your first course code above to start building your schedule wallpaper.
                     </p>
                   </div>
                 )}
@@ -866,19 +866,19 @@ export default function Home() {
                     <div>
                       <p className="text-lg font-bold">1. Search the right subject</p>
                       <p className="mt-1 text-sm leading-6 text-white/70">
-                        Pull subject matches from campus and faculty, then choose the exact result if multiple show up.
+                        Pull subject matches from campus and faculty, then choose the exact result if more than one shows up.
                       </p>
                     </div>
                     <div>
                       <p className="text-lg font-bold">2. Pick the best group combo</p>
                       <p className="mt-1 text-sm leading-6 text-white/70">
-                        Compare groups manually or let the combo helper look for a clash-free selection.
+                        Compare groups manually or let the combo helper look for a cleaner, clash-free schedule.
                       </p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold">3. Export your plan</p>
+                      <p className="text-lg font-bold">3. Turn it into a wallpaper</p>
                       <p className="mt-1 text-sm leading-6 text-white/70">
-                        Switch between grid and list view, export a JPG, or build a wallpaper from the final schedule.
+                        Once your classes look right, open the wallpaper maker and export a polished version for your phone.
                       </p>
                     </div>
                   </div>
@@ -913,19 +913,19 @@ export default function Home() {
               {combinedEntries.length === 0 ? (
                 <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-white/10 bg-white/8 px-5 py-12 text-center backdrop-blur-sm">
                   <CalendarX2 className="h-10 w-10 text-white/35" />
-                  <p className="mt-3 text-lg font-semibold text-white">Select groups to generate your timetable</p>
+                  <p className="mt-3 text-lg font-semibold text-white">Select groups to generate your class canvas</p>
                   <p className="mt-2 max-w-sm text-sm leading-6 text-white/70">
-                    Pick at least one group for each subject you want included.
+                    Pick at least one group for each subject you want included in the wallpaper.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">Results</p>
-                      <h2 className="mt-2 text-3xl font-black tracking-tight text-white">My timetable</h2>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">Wallpaper Source</p>
+                      <h2 className="mt-2 text-3xl font-black tracking-tight text-white">Your class canvas</h2>
                       <p className="mt-1 text-sm text-white/72">
-                        {displayedEntries.length} session{displayedEntries.length !== 1 ? "s" : ""} shown
+                        {displayedEntries.length} session{displayedEntries.length !== 1 ? "s" : ""} ready for timetable view and wallpaper export
                         {clashCount > 0 ? (
                           <span className="ml-2 font-medium text-[#ff8e8e]">
                             {clashCount} clash{clashCount !== 1 ? "es" : ""}

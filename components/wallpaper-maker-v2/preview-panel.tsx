@@ -103,7 +103,7 @@ export function PreviewPanel() {
     setIsExporting(true);
 
     try {
-      const filenameBase = `uitm-timetable-${settings.layoutStyle}-${settings.orientation}`;
+      const filenameBase = `uitm-class-canvas-${settings.layoutStyle}-${settings.orientation}`;
       const exportOptions = {
         pixelRatio: 2,
         quality: settings.exportQuality,
