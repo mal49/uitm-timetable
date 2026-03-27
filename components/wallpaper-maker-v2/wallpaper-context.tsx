@@ -12,7 +12,6 @@ export type LayoutStyle =
   | "wallpaper-table";
 export type ThemeId =
   | "ios-default"
-  | "dark"
   | "light"
   | "gradient"
   | "solid"
@@ -92,7 +91,7 @@ const defaultSettings: WallpaperSettings = {
   autoContrast: true,
   fontSize: 1,
   fontWeight: "regular",
-  titleText: "My Timetable",
+  titleText: "Class Canvas",
   showCourseCode: true,
   showCourseName: false,
   showTime: true,

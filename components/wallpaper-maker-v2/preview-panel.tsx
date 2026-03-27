@@ -103,7 +103,7 @@ export function PreviewPanel() {
     setIsExporting(true);
 
     try {
-      const filenameBase = `uitm-timetable-${settings.layoutStyle}-${settings.orientation}`;
+      const filenameBase = `uitm-class-canvas-${settings.layoutStyle}-${settings.orientation}`;
       const exportOptions = {
         pixelRatio: 2,
         quality: settings.exportQuality,
@@ -128,22 +128,22 @@ export function PreviewPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-4 sm:px-5 py-4 border-b border-border flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-5">
         <div className="flex items-center gap-2">
-          <Smartphone className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold">Preview</h3>
+          <Smartphone className="h-4 w-4 text-slate-500" />
+          <h3 className="text-sm font-semibold text-slate-900">Preview</h3>
         </div>
         
         {/* Orientation Toggle */}
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
+        <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
           <button
             type="button"
             onClick={() => updateSettings({ orientation: "portrait" })}
             className={cn(
-              "px-3 py-1 rounded text-xs font-medium transition-colors",
+              "rounded px-3 py-1 text-xs font-medium transition-colors",
               settings.orientation === "portrait"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
             )}
           >
             Portrait
@@ -152,10 +152,10 @@ export function PreviewPanel() {
             type="button"
             onClick={() => updateSettings({ orientation: "landscape" })}
             className={cn(
-              "px-3 py-1 rounded text-xs font-medium transition-colors",
+              "rounded px-3 py-1 text-xs font-medium transition-colors",
               settings.orientation === "landscape"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
             )}
           >
             Landscape
@@ -409,7 +409,12 @@ export function PreviewPanel() {
 
       {/* Export Button */}
       <div className="px-4 sm:px-5 py-4 border-t border-border">
-        <Button className="w-full" size="lg" onClick={handleExport} disabled={isExporting}>
+        <Button
+          className="w-full rounded-full border-0 bg-[#21d4cf] font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.24)] hover:bg-[#3fe1dc]"
+          size="lg"
+          onClick={handleExport}
+          disabled={isExporting}
+        >
           <Download className="h-4 w-4 mr-2" />
           {isExporting ? "Exporting..." : "Export Wallpaper"}
         </Button>
