@@ -12,7 +12,7 @@ export function SiteFooter() {
               <div className="flex items-center gap-2.5">
                 <Smartphone className="h-3.5 w-3.5 text-[#7df4c3]" />
                 <p className="text-sm font-semibold tracking-tight text-white">
-                  UiTM Class Canvas
+                  UiTM Schedule
                 </p>
               </div>
               <p className="max-w-xl text-sm leading-6 text-white/65">
@@ -43,7 +43,7 @@ export function SiteFooter() {
             <p className="max-w-2xl">
               Unofficial UiTM class schedule and wallpaper tool for students.
             </p>
-            <p className="shrink-0">© {year} UiTM Class Canvas</p>
+            <p className="shrink-0">© {year} UiTM Schedule</p>
           </div>
         </div>
       </div>
