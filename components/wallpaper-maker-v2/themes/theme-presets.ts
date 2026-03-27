@@ -24,16 +24,6 @@ export const THEME_PRESETS: ThemePreset[] = [
     overlayTextColor: "#0f172a",
   },
   {
-    id: "dark",
-    name: "Dark Mode",
-    description: "Deep dark with subtle accents",
-    background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-    lockscreenTextColor: "#f8fafc",
-    lockscreenTitleColor: "#f8fafc",
-    overlayBackground: "rgba(30, 41, 59, 0.95)",
-    overlayTextColor: "#f8fafc",
-  },
-  {
     id: "light",
     name: "Light & Clean",
     description: "Soft and minimal",

@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { SearchForm } from "@/components/search-form";
 import { TimetableGrid, TimetableGridSkeleton } from "@/components/timetable-grid";
 import { TimetableTable } from "@/components/timetable-table";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { WallpaperMaker } from "@/components/wallpaper-maker-v2/wallpaper-maker";
 import { Input } from "@/components/ui/input";
 import { SiteFooter } from "@/components/site-footer";
@@ -487,7 +486,7 @@ export default function Home() {
   const clashCount = combinedEntries.filter((e) => e.isClash).length;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="relative min-h-screen overflow-x-clip bg-[#f7f3ea] text-slate-900">
       {/* Off-screen export tree (desktop width). */}
       {combinedEntries.length > 0 ? (
         <div
@@ -516,94 +515,108 @@ export default function Home() {
         </div>
       ) : null}
 
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 h-12 sm:h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-lg bg-primary flex items-center justify-center">
-              <GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" />
+      <div className="absolute inset-x-0 top-0 h-[760px] bg-[radial-gradient(circle_at_top_left,_rgba(168,245,229,0.18),_transparent_20%),radial-gradient(circle_at_top_right,_rgba(111,211,255,0.18),_transparent_24%),linear-gradient(180deg,_#061b1d_0%,_#10263a_38%,_#39255a_72%,_#5e3f86_100%)]" />
+      <header className="sticky top-0 z-30 px-4 pt-4 sm:px-6 sm:pt-5">
+        <div className="mx-auto flex max-w-6xl items-center justify-between rounded-[1.75rem] border border-white/55 bg-white/92 px-5 py-3 text-slate-900 shadow-[0_18px_40px_rgba(45,88,135,0.12)] backdrop-blur-xl sm:px-7 sm:py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100">
+              <GraduationCap className="h-4 w-4 text-sky-600" />
             </div>
-            <span className="font-semibold text-xs sm:text-sm tracking-tight">UiTM Timetable</span>
+            <span className="text-sm font-semibold tracking-tight sm:text-base">UiTM Timetable Maker</span>
           </div>
-          <ThemeToggle />
+
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Malaysia
+          </div>
         </div>
       </header>
 
-      {/* Main */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-10 space-y-6 sm:space-y-8">
-
-        {/* Hero */}
-        <div className="space-y-1.5">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">
-            Build Your Timetable
-          </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm md:text-base max-w-xl">
-            Add your subjects, pick the right timetable result, then select your groups to build a custom schedule.
-          </p>
-        </div>
-
-        {/* Add subject */}
-        <div className="rounded-lg sm:rounded-xl border border-border bg-card p-4 sm:p-5 md:p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-3 sm:gap-4 flex-col sm:flex-row">
-            <div className="space-y-1">
-              <p className="text-xs sm:text-sm font-semibold text-foreground">Add a subject</p>
-              <p className="text-[11px] sm:text-xs text-muted-foreground">
-                Use the same campus/faculty for your current semester, then add multiple course codes.
+      <main className="relative z-10">
+        <section className="pb-16 pt-10 text-white sm:pb-20 sm:pt-12">
+          <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 sm:px-6">
+            <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/78 backdrop-blur-sm">
+                <span className="h-2 w-2 rounded-full bg-[#7df4c3]" />
+                Semester planner
+              </div>
+              <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl">
+                Timetable making
+                <span className="block text-[#7df4c3]">made easier</span>
+              </h1>
+              <p className="mt-4 max-w-lg text-sm leading-7 text-white/72 sm:text-base">
+                Search subjects, pick groups, and build your semester.
               </p>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-              <Plus className="h-3.5 w-3.5" />
-              Add as many as you want
-            </div>
-          </div>
-          <div className="mt-3 sm:mt-4">
-            <SearchForm onSubmit={handleAddSubject} isLoading={adding} />
-          </div>
-        </div>
-
-        {globalError && (
-          <div className="rounded-lg sm:rounded-xl border border-destructive/40 bg-destructive/5 px-4 sm:px-5 py-4 sm:py-6 flex items-start gap-3 sm:gap-4">
-            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-semibold text-destructive text-xs sm:text-sm">Something went wrong</p>
-              <p className="text-xs sm:text-sm text-muted-foreground">{globalError}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Subject list */}
-        {items.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-3">
-              <div>
-                <h2 className="text-xs sm:text-sm font-semibold text-foreground">Your subjects</h2>
-                <p className="text-[11px] sm:text-xs text-muted-foreground">
-                  Select the correct subject result (if needed), then choose your group(s).
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {suggestMsg ? (
-                  <span className="text-[11px] sm:text-xs text-muted-foreground hidden sm:inline">{suggestMsg}</span>
-                ) : null}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleSuggestCombo}
-                  disabled={suggesting}
-                  className="gap-2 text-xs h-8 px-3"
-                >
-                  {suggesting ? (
-                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
-                  ) : (
-                    <Wand2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  )}
-                  <span className="hidden sm:inline">Find combo</span>
-                  <span className="sm:hidden">Combo</span>
-                </Button>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <div className="rounded-full bg-[#21d4cf] px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_10px_24px_rgba(33,212,207,0.24)]">
+                  Search timetable
+                </div>
               </div>
             </div>
 
-            <div className="max-h-[520px] overflow-y-auto pr-1 sm:pr-2 -mr-1 sm:-mr-2 grid gap-3 lg:grid-cols-2">
+            <div className="mx-auto w-full max-w-4xl">
+              <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-[0_26px_60px_rgba(5,10,25,0.18)] backdrop-blur-md sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-white">Start a new run</p>
+                    <p className="text-xs leading-5 text-white/65 sm:text-sm">
+                      Pick your campus, faculty, and course code to pull the latest timetable data.
+                    </p>
+                  </div>
+                  <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-black/15 px-3 py-1.5 text-xs text-white/65 lg:inline-flex">
+                    <Plus className="h-3.5 w-3.5" />
+                    Stack as many subjects as you need
+                  </div>
+                </div>
+                <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-[#6b5a8f]/78 p-4 text-white shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-5">
+                  <SearchForm onSubmit={handleAddSubject} isLoading={adding} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="relative z-10">
+          <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-8 sm:gap-8 sm:px-6 sm:pb-12">
+
+            {globalError && (
+              <div className="flex items-start gap-3 rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-4 text-slate-900 shadow-sm sm:px-5">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-rose-700">Something went wrong</p>
+                  <p className="text-sm text-slate-600">{globalError}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="rounded-[2rem] bg-white p-5 shadow-[0_24px_60px_rgba(31,41,55,0.08)] ring-1 ring-slate-200/70 sm:p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Subjects</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Build your party</h2>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      Select the correct subject result, set the group, and customize its color on the timetable.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {suggestMsg ? <span className="hidden text-xs text-slate-500 sm:inline">{suggestMsg}</span> : null}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleSuggestCombo}
+                      disabled={suggesting}
+                      className="h-9 gap-2 rounded-full border-0 bg-[#21d4cf] px-4 text-xs font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.2)] hover:bg-[#3fe1dc]"
+                    >
+                      {suggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                      <span className="hidden sm:inline">Find combo</span>
+                      <span className="sm:hidden">Combo</span>
+                    </Button>
+                  </div>
+                </div>
+
+                {items.length > 0 ? (
+                  <div className="-mr-1 mt-5 grid max-h-[560px] gap-3 overflow-y-auto pr-1 sm:-mr-2 sm:pr-2 xl:grid-cols-2">
               {items.map((it) => {
                 const groups = groupKeys(it.grouped);
                 const hasGroups = groups.length > 0;
@@ -611,90 +624,99 @@ export default function Home() {
                 const ready = it.status === "ready";
 
                 return (
-                  <div key={it.id} className="rounded-lg sm:rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-xs sm:text-sm">{it.course}</span>
-                          {it.subjectName && it.subjectName !== it.course ? (
-                            <span className="text-xs sm:text-sm text-muted-foreground break-all">{it.subjectName}</span>
-                          ) : null}
-                        </div>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">
-                          Campus: <span className="font-mono">{it.request.campus}</span>
-                          {" · "}
-                          Faculty: <span className="font-mono">{it.request.faculty || "—"}</span>
-                        </p>
-                      </div>
-
-                      <div className="flex items-start gap-2 sm:gap-3 self-start">
-                        <div className="rounded-lg border border-border bg-muted/30 px-2 sm:px-2.5 py-1.5 sm:py-2">
-                          <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                            Color
-                          </p>
-                          <div className="mt-1 sm:mt-1.5 flex items-center gap-1 sm:gap-1.5 flex-wrap">
-                            {PRESET_SUBJECT_HEX.map((hex, idx) => {
-                              const selected =
-                                (subjectColorOverrides[it.course] ?? "").toLowerCase() === hex.toLowerCase();
-                              return (
-                                <button
-                                  key={`${it.course}-color-${idx}`}
-                                  type="button"
-                                  onClick={() => setSubjectColor(it.course, hex)}
-                                  aria-label={`Set ${it.course} color ${idx + 1}`}
-                                  style={{ backgroundColor: hex, borderColor: hex }}
-                                  className={`h-3.5 w-3.5 sm:h-4 sm:w-4 rounded-full border transition-transform hover:scale-110 ${
-                                    selected ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
-                                  }`}
-                                />
-                              );
-                            })}
-                            <label className="relative inline-flex h-4 w-4 sm:h-5 sm:w-5 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-border bg-background">
-                              <span
-                                className="h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-sm border border-border/60"
-                                style={{ backgroundColor: subjectColorOverrides[it.course] ?? "#14b8a6" }}
-                              />
-                              <input
-                                type="color"
-                                value={subjectColorOverrides[it.course] ?? "#14b8a6"}
-                                onChange={(e) => setSubjectColor(it.course, e.target.value)}
-                                className="absolute inset-0 cursor-pointer opacity-0"
-                                aria-label={`Pick custom color for ${it.course}`}
-                              />
-                            </label>
+                  <div key={it.id} className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-[#fffdf9] p-4 shadow-sm">
+                    <div className="min-w-0 space-y-3">
+                      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <span className="inline-flex max-w-full shrink-0 rounded-full bg-slate-900 px-3 py-1.5 font-mono text-xs font-bold leading-none text-white">
+                            {it.course}
+                            </span>
+                            {it.subjectName && it.subjectName !== it.course ? (
+                              <span className="min-w-0 break-words text-xs text-slate-500 sm:text-sm">
+                                {it.subjectName}
+                              </span>
+                            ) : null}
                           </div>
-                          <input
-                            type="text"
-                            inputMode="text"
-                            value={subjectColorDrafts[it.course] ?? subjectColorOverrides[it.course] ?? ""}
-                            placeholder="#22c55e"
-                            onChange={(e) =>
-                              setSubjectColorDrafts((prev) => ({ ...prev, [it.course]: e.target.value }))
-                            }
-                            onBlur={(e) => {
-                              const normalized = normalizeHexColor(e.target.value);
-                              if (normalized) {
-                                setSubjectColor(it.course, normalized);
-                                return;
-                              }
-                              setSubjectColorDrafts((prev) => ({
-                                ...prev,
-                                [it.course]: subjectColorOverrides[it.course] ?? "",
-                              }));
-                            }}
-                            className="mt-2 h-7 w-28 rounded-md border border-input bg-background px-2 text-[11px] font-mono"
-                            aria-label={`Hex color for ${it.course}`}
-                          />
+                          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 sm:text-xs">
+                            <p className="min-w-0">
+                              Campus: <span className="font-mono text-slate-700">{it.request.campus}</span>
+                            </p>
+                            <span className="text-slate-300">•</span>
+                            <p className="min-w-0">
+                              Faculty: <span className="font-mono text-slate-700">{it.request.faculty || "—"}</span>
+                            </p>
+                          </div>
                         </div>
+
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => removeItem(it.id)}
-                          className="gap-2 self-start"
+                          className="justify-start gap-2 self-start rounded-full px-0 text-slate-500 hover:bg-transparent hover:text-slate-900 sm:px-3 sm:hover:bg-slate-100"
                         >
-                          <Trash2 className="h-4 w-4" />
-                          Remove
+                          <Trash2 className="h-4 w-4 shrink-0" />
+                          <span>Remove</span>
                         </Button>
+                      </div>
+
+                      <div className="w-full min-w-0 rounded-2xl bg-slate-100 px-3 py-2 sm:max-w-[260px]">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                          Color
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          {PRESET_SUBJECT_HEX.map((hex, idx) => {
+                            const selected =
+                              (subjectColorOverrides[it.course] ?? "").toLowerCase() === hex.toLowerCase();
+                            return (
+                              <button
+                                key={`${it.course}-color-${idx}`}
+                                type="button"
+                                onClick={() => setSubjectColor(it.course, hex)}
+                                aria-label={`Set ${it.course} color ${idx + 1}`}
+                                style={{ backgroundColor: hex, borderColor: hex }}
+                                className={`h-4 w-4 rounded-full border transition-transform hover:scale-110 ${
+                                  selected ? "ring-2 ring-slate-900 ring-offset-2 ring-offset-[#fffdf9]" : ""
+                                }`}
+                              />
+                            );
+                          })}
+                          <label className="relative inline-flex h-5 w-5 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-slate-300 bg-white">
+                            <span
+                              className="h-3.5 w-3.5 rounded-sm border border-slate-300"
+                              style={{ backgroundColor: subjectColorOverrides[it.course] ?? "#14b8a6" }}
+                            />
+                            <input
+                              type="color"
+                              value={subjectColorOverrides[it.course] ?? "#14b8a6"}
+                              onChange={(e) => setSubjectColor(it.course, e.target.value)}
+                              className="absolute inset-0 cursor-pointer opacity-0"
+                              aria-label={`Pick custom color for ${it.course}`}
+                            />
+                          </label>
+                        </div>
+                        <input
+                          type="text"
+                          inputMode="text"
+                          value={subjectColorDrafts[it.course] ?? subjectColorOverrides[it.course] ?? ""}
+                          placeholder="#22c55e"
+                          onChange={(e) =>
+                            setSubjectColorDrafts((prev) => ({ ...prev, [it.course]: e.target.value }))
+                          }
+                          onBlur={(e) => {
+                            const normalized = normalizeHexColor(e.target.value);
+                            if (normalized) {
+                              setSubjectColor(it.course, normalized);
+                              return;
+                            }
+                            setSubjectColorDrafts((prev) => ({
+                              ...prev,
+                              [it.course]: subjectColorOverrides[it.course] ?? "",
+                            }));
+                          }}
+                          className="mt-2 h-8 w-28 rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-mono text-slate-700"
+                          aria-label={`Hex color for ${it.course}`}
+                        />
                       </div>
                     </div>
 
@@ -705,22 +727,22 @@ export default function Home() {
                     )}
 
                     {it.status === "error" && (
-                      <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 flex items-start gap-3">
-                        <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      <div className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
                         <div className="space-y-0.5">
-                          <p className="text-sm font-semibold text-destructive">Failed</p>
-                          <p className="text-xs text-muted-foreground">{it.error ?? "Unknown error"}</p>
+                          <p className="text-sm font-semibold text-rose-700">Failed</p>
+                          <p className="text-xs text-slate-600">{it.error ?? "Unknown error"}</p>
                         </div>
                       </div>
                     )}
 
                     {it.status === "choose_subject" && (
                       <div className="mt-4 space-y-2">
-                        <p className="text-sm font-medium text-foreground">Pick the correct subject result</p>
+                        <p className="text-sm font-medium text-slate-900">Pick the correct subject result</p>
                         <select
                           value={it.selectedPath ?? ""}
                           onChange={(e) => handleChooseMatch(it.id, e.target.value)}
-                          className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                          className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900"
                         >
                           <option value="" disabled>
                             Select a result…
@@ -742,22 +764,22 @@ export default function Home() {
 
                     {ready && (
                       <div className="mt-4 space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <p className="text-sm font-medium text-foreground">
-                            Groups {hasGroups ? <span className="text-muted-foreground">({groups.length})</span> : null}
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="text-sm font-medium text-slate-900">
+                            Groups {hasGroups ? <span className="text-slate-500">({groups.length})</span> : null}
                           </p>
                           {hasGroups && (
-                            <div className="flex items-center gap-2">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
                               <button
                                 onClick={() => toggleShowSelectedOnly(it.id)}
-                                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                className="text-xs text-slate-500 transition-colors hover:text-slate-900"
                               >
                                 {it.showSelectedOnly ? "Show all" : "Selected only"}
                               </button>
                               {hasSelection && (
                                 <button
                                   onClick={() => clearGroups(it.id)}
-                                  className="text-xs text-primary hover:text-primary/80 transition-colors font-medium"
+                                  className="text-xs font-medium text-teal-700 transition-colors hover:text-teal-600"
                                 >
                                   Clear
                                 </button>
@@ -767,21 +789,21 @@ export default function Home() {
                         </div>
 
                         {!hasGroups ? (
-                          <p className="text-sm text-muted-foreground">No groups found for this subject.</p>
+                          <p className="text-sm text-slate-500">No groups found for this subject.</p>
                         ) : (
                           <div className="space-y-3">
                             <div className="relative">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                               <Input
                                 value={it.groupFilter}
                                 onChange={(e) => setGroupFilter(it.id, e.target.value)}
                                 placeholder="Filter groups… (e.g. A, CDCS2306, 2406B)"
-                                className="pl-9 pr-9"
+                                className="border-slate-300 bg-white pl-9 pr-9 text-slate-900"
                               />
                               {it.groupFilter.trim() ? (
                                 <button
                                   onClick={() => setGroupFilter(it.id, "")}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-900"
                                   aria-label="Clear group filter"
                                 >
                                   <X className="h-4 w-4" />
@@ -789,7 +811,7 @@ export default function Home() {
                               ) : null}
                             </div>
 
-                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="grid gap-2 sm:grid-cols-2">
                             {groups
                               .filter((g) => {
                                 const q = it.groupFilter.trim().toLowerCase();
@@ -802,16 +824,16 @@ export default function Home() {
                               return (
                                 <label
                                   key={g}
-                                  className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 hover:bg-muted/30 cursor-pointer transition-colors"
+                                  className="flex min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 transition-colors hover:bg-slate-50"
                                 >
                                   <input
                                     type="radio"
                                     name={`group-${it.id}`}
                                     checked={checked}
                                     onChange={() => selectGroup(it.id, g)}
-                                    className="h-3.5 w-3.5 rounded accent-primary cursor-pointer"
+                                    className="h-3.5 w-3.5 cursor-pointer rounded accent-teal-500"
                                   />
-                                  <span className="font-mono text-xs text-foreground flex-1">
+                                  <span className="min-w-0 flex-1 break-words font-mono text-xs text-slate-800">
                                     {it.course} <span className="font-semibold">{g}</span>
                                   </span>
                                 </label>
@@ -826,128 +848,177 @@ export default function Home() {
                 );
               })}
             </div>
-          </div>
-        )}
-
-        {/* Combined timetable */}
-        {items.length === 0 && (
-          <div className="rounded-xl border border-border bg-card px-5 py-12 flex flex-col items-center gap-3 text-center">
-            <CalendarX2 className="h-10 w-10 text-muted-foreground/40" />
-            <p className="font-semibold text-foreground">No subjects added yet</p>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Add your first course code above to start building your timetable.
-            </p>
-          </div>
-        )}
-
-        {items.length > 0 && combinedEntries.length === 0 && (
-          <div className="rounded-xl border border-border bg-card px-5 py-12 flex flex-col items-center gap-3 text-center">
-            <CalendarX2 className="h-10 w-10 text-muted-foreground/40" />
-            <p className="font-semibold text-foreground">Select groups to generate your timetable</p>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Pick at least one group for each subject you want included.
-            </p>
-          </div>
-        )}
-
-        {combinedEntries.length > 0 && (
-          <div className="mx-auto w-full max-w-7xl space-y-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 className="text-lg font-bold tracking-tight">My Timetable</h2>
-                <p className="text-sm text-muted-foreground">
-                  {displayedEntries.length} session{displayedEntries.length !== 1 ? "s" : ""} shown
-                  {clashCount > 0 ? (
-                    <span className="ml-2 text-destructive font-medium">
-                      {clashCount} clash{clashCount !== 1 ? "es" : ""}
-                    </span>
-                  ) : null}
-                </p>
-                {exportError ? <p className="text-xs text-destructive mt-1">{exportError}</p> : null}
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap lg:justify-end">
-                <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-                  <Button
-                    variant={viewMode === "grid" ? "secondary" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("grid")}
-                    className="gap-1.5 h-8 px-3"
-                  >
-                    <LayoutGrid className="h-3.5 w-3.5" />
-                    Week
-                  </Button>
-                  <Button
-                    variant={viewMode === "table" ? "secondary" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("table")}
-                    className="gap-1.5 h-8 px-3"
-                  >
-                    <List className="h-3.5 w-3.5" />
-                    List
-                  </Button>
-                </div>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => exportTimetable()}
-                  disabled={exporting}
-                  className="gap-2"
-                >
-                  {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Export JPG
-                </Button>
-              </div>
-            </div>
-
-            {viewMode === "grid" ? (
-              <div className="space-y-2">
-                {clashCount > 0 && (
-                  <div className="flex items-center justify-start lg:justify-end">
-                    <button
-                      onClick={() => setShowClashesOnly((v) => !v)}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showClashesOnly ? "Show all sessions" : "Show only clashes"}
-                    </button>
+                ) : (
+                  <div className="mt-5 flex min-h-[280px] flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-[#faf7f0] px-5 py-10 text-center">
+                    <CalendarX2 className="h-10 w-10 text-slate-300" />
+                    <p className="mt-3 text-base font-semibold text-slate-900">No subjects added yet</p>
+                    <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                      Add your first course code above to start building your timetable.
+                    </p>
                   </div>
                 )}
-                <div ref={timetableRef} className="w-full">
-                  <TimetableGrid
-                    entries={displayedEntries}
-                    course="MY"
-                    colorOverrides={subjectColorOverrides}
-                  />
-                </div>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {clashCount > 0 && (
-                  <div className="flex items-center justify-start lg:justify-end">
-                    <button
-                      onClick={() => setShowClashesOnly((v) => !v)}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showClashesOnly ? "Show all sessions" : "Show only clashes"}
-                    </button>
+
+              <div className="flex flex-col gap-5">
+                <div className="rounded-[2rem] bg-[#2a1848] p-5 text-white shadow-[0_24px_50px_rgba(42,24,72,0.24)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">How it works</p>
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <p className="text-lg font-bold">1. Search the right subject</p>
+                      <p className="mt-1 text-sm leading-6 text-white/70">
+                        Pull subject matches from campus and faculty, then choose the exact result if multiple show up.
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold">2. Pick the best group combo</p>
+                      <p className="mt-1 text-sm leading-6 text-white/70">
+                        Compare groups manually or let the combo helper look for a clash-free selection.
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold">3. Export your plan</p>
+                      <p className="mt-1 text-sm leading-6 text-white/70">
+                        Switch between grid and list view, export a JPG, or build a wallpaper from the final schedule.
+                      </p>
+                    </div>
                   </div>
-                )}
-                <div ref={timetableRef} className="w-full">
-                  <TimetableTable
-                    entries={displayedEntries}
-                    course="MY"
-                    colorOverrides={subjectColorOverrides}
-                  />
+                </div>
+
+                <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_45px_rgba(15,23,42,0.07)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Snapshot</p>
+                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-900">{items.length}</p>
+                  <p className="text-sm text-slate-500">
+                    subject{items.length !== 1 ? "s" : ""} in your current build
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl bg-slate-100 p-3">
+                      <p className="text-xl font-bold text-slate-900">{combinedEntries.length}</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Sessions</p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-100 p-3">
+                      <p className="text-xl font-bold text-slate-900">{clashCount}</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Clashes</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
-
-            <div className="pt-2">
-              <WallpaperMaker entries={displayedEntries} colorOverrides={subjectColorOverrides} />
             </div>
-
           </div>
+        </section>
+
+        {items.length > 0 && (
+          <section className="relative overflow-hidden bg-[linear-gradient(180deg,_#2e1d52_0%,_#17182d_100%)] py-12 text-white sm:py-16">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(125,244,195,0.12),_transparent_30%)]" />
+            <div className="mx-auto max-w-6xl px-4 sm:px-6">
+              {combinedEntries.length === 0 ? (
+                <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-white/10 bg-white/8 px-5 py-12 text-center backdrop-blur-sm">
+                  <CalendarX2 className="h-10 w-10 text-white/35" />
+                  <p className="mt-3 text-lg font-semibold text-white">Select groups to generate your timetable</p>
+                  <p className="mt-2 max-w-sm text-sm leading-6 text-white/70">
+                    Pick at least one group for each subject you want included.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">Results</p>
+                      <h2 className="mt-2 text-3xl font-black tracking-tight text-white">My timetable</h2>
+                      <p className="mt-1 text-sm text-white/72">
+                        {displayedEntries.length} session{displayedEntries.length !== 1 ? "s" : ""} shown
+                        {clashCount > 0 ? (
+                          <span className="ml-2 font-medium text-[#ff8e8e]">
+                            {clashCount} clash{clashCount !== 1 ? "es" : ""}
+                          </span>
+                        ) : null}
+                      </p>
+                      {exportError ? <p className="mt-1 text-xs text-[#ffb4b4]">{exportError}</p> : null}
+                    </div>
+
+                    <div className="hidden w-full flex-col items-stretch gap-2 sm:flex sm:w-auto sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+                      <div className="relative z-10 grid w-full grid-cols-2 gap-1 rounded-full bg-white/10 p-1 pointer-events-auto sm:flex sm:w-auto sm:items-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewMode("grid")}
+                          className={`relative z-10 h-8 w-full gap-1.5 rounded-full border-0 pointer-events-auto sm:w-auto ${
+                            viewMode === "grid"
+                              ? "bg-white text-slate-900 hover:bg-white/90"
+                              : "bg-transparent text-white hover:bg-white/10"
+                          }`}
+                        >
+                          <LayoutGrid className="h-3.5 w-3.5" />
+                          Week
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewMode("table")}
+                          className={`relative z-10 h-8 w-full gap-1.5 rounded-full border-0 pointer-events-auto sm:w-auto ${
+                            viewMode === "table"
+                              ? "bg-white text-slate-900 hover:bg-white/90"
+                              : "bg-transparent text-white hover:bg-white/10"
+                          }`}
+                        >
+                          <List className="h-3.5 w-3.5" />
+                          List
+                        </Button>
+                      </div>
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => exportTimetable()}
+                        disabled={exporting}
+                        className="h-9 w-full gap-2 rounded-full border-0 bg-[#21d4cf] px-4 font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.2)] hover:bg-[#3fe1dc] sm:w-auto"
+                      >
+                        {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        Export JPG
+                      </Button>
+                    </div>
+                  </div>
+
+                  {viewMode === "grid" ? (
+                    <div className="hidden space-y-2 sm:block">
+                      {clashCount > 0 && (
+                        <div className="flex items-center justify-start lg:justify-end">
+                          <button
+                            onClick={() => setShowClashesOnly((v) => !v)}
+                            className="text-xs text-white/65 transition-colors hover:text-white"
+                          >
+                            {showClashesOnly ? "Show all sessions" : "Show only clashes"}
+                          </button>
+                        </div>
+                      )}
+                      <div ref={timetableRef} className="w-full rounded-[2rem] bg-white p-2 shadow-[0_24px_60px_rgba(0,0,0,0.18)] sm:p-3">
+                        <TimetableGrid entries={displayedEntries} course="MY" colorOverrides={subjectColorOverrides} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {clashCount > 0 && (
+                        <div className="flex items-center justify-start lg:justify-end">
+                          <button
+                            onClick={() => setShowClashesOnly((v) => !v)}
+                            className="text-xs text-white/65 transition-colors hover:text-white"
+                          >
+                            {showClashesOnly ? "Show all sessions" : "Show only clashes"}
+                          </button>
+                        </div>
+                      )}
+                      <div ref={timetableRef} className="w-full rounded-[2rem] bg-white p-2 shadow-[0_24px_60px_rgba(0,0,0,0.18)] sm:p-3">
+                        <TimetableTable entries={displayedEntries} course="MY" colorOverrides={subjectColorOverrides} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <WallpaperMaker entries={displayedEntries} colorOverrides={subjectColorOverrides} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
         )}
       </main>
 

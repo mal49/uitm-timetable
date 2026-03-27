@@ -17,6 +17,7 @@ interface ComboboxProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  className?: string;
 }
 
 export function Combobox({
@@ -26,6 +27,7 @@ export function Combobox({
   onChange,
   placeholder = "Select…",
   disabled = false,
+  className,
 }: ComboboxProps) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
@@ -86,7 +88,8 @@ export function Combobox({
           "flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors text-left",
           "focus:outline-none focus:ring-1 focus:ring-ring",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          !selected && "text-muted-foreground"
+          !selected && "text-muted-foreground",
+          className
         )}
       >
         <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">

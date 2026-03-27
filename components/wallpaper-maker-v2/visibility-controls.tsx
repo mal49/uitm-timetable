@@ -77,7 +77,7 @@ export function VisibilityControls() {
             className={cn(
               "group flex min-w-0 cursor-pointer flex-col rounded-xl border px-3 py-3 transition-all",
               checked
-                ? "border-primary/35 bg-primary/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                ? "border-[#21d4cf]/45 bg-[#21d4cf]/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
                 : "border-border/70 bg-muted/[0.18] hover:border-border hover:bg-muted/[0.28]"
             )}
           >
@@ -86,8 +86,8 @@ export function VisibilityControls() {
                 className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors",
                   checked
-                    ? "border-primary/30 bg-primary/12 text-primary"
-                    : "border-border/70 bg-background/40 text-muted-foreground group-hover:text-foreground"
+                    ? "border-[#21d4cf]/40 bg-[#21d4cf]/12 text-[#0f766e]"
+                    : "border-slate-200 bg-white text-slate-500 group-hover:text-slate-900"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -97,7 +97,7 @@ export function VisibilityControls() {
                 className={cn(
                   "relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
                   checked
-                    ? "border-primary/50 bg-primary"
+                    ? "border-[#21d4cf]/60 bg-[#21d4cf]"
                     : "border-border bg-background/80"
                 )}
               >
@@ -114,12 +114,12 @@ export function VisibilityControls() {
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[14px] font-semibold leading-tight text-foreground">{label}</span>
                 {checked ? (
-                  <span className="rounded-full bg-primary/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
+                  <span className="rounded-full bg-[#21d4cf]/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#0f766e]">
                     On
                   </span>
                 ) : null}
               </div>
-              <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{description}</p>
+              <p className="mt-1 text-[11px] leading-4 text-slate-600">{description}</p>
             </div>
 
             <input

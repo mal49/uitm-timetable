@@ -12,7 +12,6 @@ export type LayoutStyle =
   | "wallpaper-table";
 export type ThemeId =
   | "ios-default"
-  | "dark"
   | "light"
   | "gradient"
   | "solid"

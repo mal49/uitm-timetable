@@ -90,8 +90,8 @@ export function TimetableGrid({
           layoutDesktop
             ? "grid-cols-5"
             : // On desktop, don't force 5 columns when only 1–2 days exist.
-              // Use one column on mobile, then shrink-wrap day columns and center.
-              "grid-cols-1 md:w-fit md:mx-auto"
+              // Keep the original desktop classes; mobile stacking is applied via CSS override below.
+              "grid-cols-1 md:w-fit md:mx-auto timetable-responsive-grid"
         }`}
         style={
           layoutDesktop
@@ -228,6 +228,16 @@ export function TimetableGrid({
           );
         })}
       </div>
+
+      {!layoutDesktop && !isWallpaper ? (
+        <style jsx>{`
+          @media (max-width: 767px) {
+            .timetable-responsive-grid {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+          }
+        `}</style>
+      ) : null}
     </div>
   );
 }

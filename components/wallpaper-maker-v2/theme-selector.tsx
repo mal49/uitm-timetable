@@ -31,11 +31,6 @@ const themeGroups: ThemeGroup[] = [
           "radial-gradient(circle at top, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #ded7cb 0%, #d7cfbe 52%, #ccc3b2 100%)",
       },
       {
-        id: "dark",
-        name: "Dark Mode",
-        preview: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
-      },
-      {
         id: "light",
         name: "Light & Clean",
         preview: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
@@ -92,9 +87,9 @@ export function ThemeSelector() {
         <AccordionItem
           key={group.title}
           value={group.title}
-          className="rounded-xl border border-border/70 bg-muted/20 px-2.5"
+          className="rounded-xl border border-slate-200 bg-slate-50/60 px-2.5"
         >
-          <AccordionTrigger className="px-1 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground hover:no-underline">
+          <AccordionTrigger className="px-1 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 hover:no-underline">
             {group.title}
           </AccordionTrigger>
           <AccordionContent className="pb-2">
@@ -109,8 +104,8 @@ export function ThemeSelector() {
                     onClick={() => updateSettings({ themeId: theme.id })}
                     className={cn(
                       "relative overflow-hidden rounded-lg border-2 transition-all",
-                      "hover:border-primary/50",
-                      isSelected ? "border-primary" : "border-border"
+                      "hover:border-[#21d4cf]/60",
+                      isSelected ? "border-[#21d4cf]" : "border-slate-200 bg-white"
                     )}
                   >
                     <div className="h-16 w-full" style={{ background: theme.preview }} />
@@ -119,7 +114,7 @@ export function ThemeSelector() {
                       <div
                         className={cn(
                           "truncate text-center text-xs font-medium transition-colors",
-                          isSelected ? "text-primary" : "text-foreground"
+                          isSelected ? "text-[#0f766e]" : "text-slate-700"
                         )}
                       >
                         {theme.name}

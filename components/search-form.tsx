@@ -56,6 +56,7 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
             value={campus}
             onChange={handleCampusChange}
             placeholder="Select campus…"
+            className="border-white/20 bg-white/92 text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.08)]"
           />
         </div>
 
@@ -74,6 +75,7 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
             onChange={setFaculty}
             placeholder={facultyRequired ? "Select faculty…" : "N/A for this campus"}
             disabled={!facultyRequired}
+            className="border-white/20 bg-white/92 text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.08)]"
           />
         </div>
 
@@ -88,7 +90,7 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
             onChange={(e) => setCourse(e.target.value.toUpperCase())}
             placeholder="e.g. CSC669"
             maxLength={10}
-            className="font-mono uppercase"
+            className="border-white/20 bg-white/92 font-mono uppercase text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.08)] placeholder:text-slate-400"
             autoComplete="off"
           />
         </div>
@@ -97,7 +99,7 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
       <Button
         type="submit"
         disabled={isLoading || !canSubmit}
-        className="w-full sm:w-auto gap-2 font-medium"
+        className="w-full gap-2 rounded-full border-0 bg-[#21d4cf] font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.24)] hover:bg-[#3fe1dc] sm:w-auto"
       >
         {isLoading ? (
           <>

@@ -188,7 +188,7 @@ export function WallpaperDesigner({
           size="sm"
           onClick={exportWallpaper}
           disabled={exporting || entries.length === 0}
-          className="gap-2 w-full sm:w-auto h-9"
+          className="h-9 w-full gap-2 rounded-full border-0 bg-[#21d4cf] font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.24)] hover:bg-[#3fe1dc] sm:w-auto"
         >
           {exporting ? null : <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
           {exporting ? "Preparing…" : "Download wallpaper"}
@@ -536,4 +536,3 @@ export function WallpaperDesigner({
     </div>
   );
 }
-
