@@ -12,7 +12,7 @@ export function TypographyControls() {
     <div className="space-y-4 pt-2 pb-1">
       {/* Title Text */}
       <div className="space-y-2">
-        <Label htmlFor="title-text" className="text-xs">Title Text</Label>
+        <Label htmlFor="title-text" className="text-xs text-slate-700">Title Text</Label>
         <Input
           id="title-text"
           value={settings.titleText}
@@ -25,8 +25,8 @@ export function TypographyControls() {
       {/* Font Size */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="font-size" className="text-xs">Font Size</Label>
-          <span className="text-xs text-muted-foreground">{Math.round(settings.fontSize * 100)}%</span>
+          <Label htmlFor="font-size" className="text-xs text-slate-700">Font Size</Label>
+          <span className="text-xs text-slate-600">{Math.round(settings.fontSize * 100)}%</span>
         </div>
         <input
           id="font-size"
@@ -36,13 +36,13 @@ export function TypographyControls() {
           step="0.1"
           value={settings.fontSize}
           onChange={(e) => updateSettings({ fontSize: parseFloat(e.target.value) })}
-          className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+          className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-[#21d4cf]"
         />
       </div>
 
       {/* Font Weight */}
       <div className="space-y-2">
-        <Label htmlFor="font-weight" className="text-xs">Font Weight</Label>
+        <Label htmlFor="font-weight" className="text-xs text-slate-700">Font Weight</Label>
         <Select
           value={settings.fontWeight}
           onValueChange={(value) => {

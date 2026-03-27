@@ -4,39 +4,47 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border/60 bg-background/20">
-      <div className="mx-auto max-w-6xl px-3 py-8 sm:px-4 sm:py-10 md:px-6">
-        <div className="grid gap-8 border-b border-border/60 pb-6 md:grid-cols-[minmax(0,1fr)_280px] md:gap-12">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <GraduationCap className="h-4.5 w-4.5 text-primary" />
-              <p className="text-base font-semibold tracking-tight text-foreground">UiTM Timetable Maker</p>
+    <footer className="border-t border-white/10 bg-[#101728] text-white">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+            <div className="min-w-0 space-y-2">
+              <div className="flex items-center gap-2.5">
+                <GraduationCap className="h-3.5 w-3.5 text-[#7df4c3]" />
+                <p className="text-sm font-semibold tracking-tight text-white">
+                  UiTM Timetable Maker
+                </p>
+              </div>
+              <p className="max-w-xl text-sm leading-6 text-white/65">
+                Plan your semester, compare groups, and export a timetable without fighting the official portal.
+              </p>
             </div>
-            <p className="max-w-xl text-sm leading-6 text-muted-foreground">
-              Plan your semester, compare groups, and export a timetable without fighting the official portal.
-            </p>
+
+            <div className="min-w-0 space-y-1 sm:max-w-[280px] sm:text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
+                Source
+              </p>
+              <p className="text-xs leading-5 text-white/60 sm:text-sm">
+                Timetable data is referenced from the UiTM scheduling portal.
+              </p>
+              <a
+                href="https://simsweb4.uitm.edu.my"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-white transition-colors hover:text-[#7df4c3] sm:justify-end"
+              >
+                <span className="truncate">simsweb4.uitm.edu.my</span>
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+              </a>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">Source</p>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Timetable data is referenced from the official UiTM scheduling portal.
+          <div className="flex flex-col gap-1.5 border-t border-white/10 pt-3 text-[11px] leading-5 text-white/45 sm:flex-row sm:items-center sm:justify-between sm:text-xs">
+            <p className="max-w-2xl">
+              Unofficial UiTM timetable helper for students planning semester schedules.
             </p>
-            <a
-              href="https://simsweb4.uitm.edu.my"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
-            >
-              simsweb4.uitm.edu.my
-              <ExternalLink className="h-4 w-4" />
-            </a>
+            <p className="shrink-0">© {year} UiTM Timetable Maker</p>
           </div>
-        </div>
-
-        <div className="mt-4 flex flex-col gap-2 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
-          <p>Unofficial UiTM timetable helper for students planning semester schedules.</p>
-          <p>© {year} UiTM Timetable Maker</p>
         </div>
       </div>
     </footer>

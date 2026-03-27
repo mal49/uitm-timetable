@@ -17,8 +17,8 @@ export function SettingsPanel() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="px-4 sm:px-5 py-4 border-b border-border">
-        <h2 className="text-lg font-bold text-foreground">Wallpaper Designer</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <h2 className="text-lg font-bold text-slate-900">Wallpaper Designer</h2>
+        <p className="mt-0.5 text-xs text-slate-600">
           Customize your timetable wallpaper
         </p>
       </div>
@@ -27,8 +27,8 @@ export function SettingsPanel() {
       <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-4">
         {/* Layout Style */}
         <div>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Wand2 className="h-4 w-4" />
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <Wand2 className="h-4 w-4 text-slate-600" />
             Layout Style
           </h3>
           <LayoutSelector />
@@ -36,8 +36,8 @@ export function SettingsPanel() {
 
         {/* Theme */}
         <div>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Palette className="h-4 w-4" />
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <Palette className="h-4 w-4 text-slate-600" />
             Theme
           </h3>
           <ThemeSelector />
@@ -47,9 +47,9 @@ export function SettingsPanel() {
         <Accordion multiple className="w-full">
           {/* Typography */}
           <AccordionItem value="typography">
-            <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+            <AccordionTrigger className="text-sm font-semibold text-slate-900 hover:no-underline">
               <div className="flex items-center gap-2">
-                <Type className="h-4 w-4" />
+                <Type className="h-4 w-4 text-slate-600" />
                 Typography
               </div>
             </AccordionTrigger>
@@ -60,9 +60,9 @@ export function SettingsPanel() {
 
           {/* Visibility */}
           <AccordionItem value="visibility">
-            <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+            <AccordionTrigger className="text-sm font-semibold text-slate-900 hover:no-underline">
               <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
+                <Eye className="h-4 w-4 text-slate-600" />
                 Element Visibility
               </div>
             </AccordionTrigger>

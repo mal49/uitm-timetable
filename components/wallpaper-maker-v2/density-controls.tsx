@@ -25,9 +25,9 @@ export function DensityControls() {
             onClick={() => updateSettings({ density: option.value })}
             className={cn(
               "w-full text-left px-3 py-2 rounded-lg border-2 transition-all",
-              "hover:border-primary/50 hover:bg-muted/30",
+              "hover:border-[#21d4cf]/60 hover:bg-muted/30",
               isSelected
-                ? "border-primary bg-primary/5"
+                ? "border-[#21d4cf] bg-[#21d4cf]/10"
                 : "border-border bg-background"
             )}
           >
@@ -36,7 +36,7 @@ export function DensityControls() {
                 <div
                   className={cn(
                     "text-xs font-semibold transition-colors",
-                    isSelected ? "text-primary" : "text-foreground"
+                    isSelected ? "text-[#0f766e]" : "text-foreground"
                   )}
                 >
                   {option.label}
@@ -46,7 +46,7 @@ export function DensityControls() {
                 </div>
               </div>
               {isSelected && (
-                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                <div className="h-2 w-2 rounded-full bg-[#21d4cf] flex-shrink-0" />
               )}
             </div>
           </button>
