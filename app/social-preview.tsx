@@ -221,13 +221,13 @@ export function SocialPreviewCard() {
                       background: color,
                     }}
                   />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                    <div style={{ fontSize: 18, fontWeight: 700 }}>{code}</div>
-                    <div style={{ fontSize: 14, color: "rgba(255,255,255,0.66)" }}>
-                      {day} • 10:00 - 12:00
+                    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700 }}>{code}</div>
+                      <div style={{ fontSize: 14, color: "rgba(255,255,255,0.66)" }}>
+                        {`${day} • 10:00 - 12:00`}
+                      </div>
                     </div>
                   </div>
-                </div>
               ))}
             </div>
             <div
