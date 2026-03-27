@@ -84,7 +84,7 @@ export function ThemeSelector() {
 
   return (
     <Accordion
-      type="multiple"
+      multiple
       defaultValue={themeGroups.map((group) => group.title)}
       className="space-y-3"
     >
