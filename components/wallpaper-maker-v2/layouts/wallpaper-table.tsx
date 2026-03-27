@@ -344,10 +344,6 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
   const hourLabels = Array.from({ length: scheduleMetrics.totalHours }).map((_, index) => (
     scheduleMetrics.startHour + index
   ));
-  const headerHeightClass = settings.showDayLabels
-    ? `grid-rows-[${densityConfig.headerRowHeight}_minmax(0,1fr)]`
-    : "grid-rows-[minmax(0,1fr)]";
-  const bodyHeightClass = `h-[calc(100%-${densityConfig.titleHeightPx}px)]`;
   const timeColumnWidth = densityConfig.timeColumnWidth;
   const tableBackground = theme.overlayBackground ?? "rgba(255, 255, 255, 0.95)";
   const tableText = theme.overlayTextColor ?? "#0f172a";
@@ -390,7 +386,15 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
           {settings.titleText || "Untitled"}
         </div>
 
-        <div className={`grid ${bodyHeightClass} ${headerHeightClass} text-[10px]`}>
+        <div
+          className="grid text-[10px]"
+          style={{
+            height: `calc(100% - ${densityConfig.titleHeightPx}px)`,
+            gridTemplateRows: settings.showDayLabels
+              ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
+              : "minmax(0, 1fr)",
+          }}
+        >
           {settings.showDayLabels ? (
             <div className="grid" style={{ gridTemplateColumns: `${timeColumnWidth} repeat(5, minmax(0, 1fr))` }}>
               <div style={{ borderRight: `1px solid ${tableGrid}` }} />
