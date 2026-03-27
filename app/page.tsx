@@ -563,7 +563,7 @@ export default function Home() {
       {combinedEntries.length > 0 ? (
         <div
           aria-hidden="true"
-          className="fixed left-[-10000px] top-0 pointer-events-none opacity-0">
+          className="fixed -left-2500 top-0 pointer-events-none opacity-0">
           <div
             ref={exportRef}
             // 1200px matches the app's comfortable desktop width and yields a horizontal JPG.
@@ -589,7 +589,7 @@ export default function Home() {
         </div>
       ) : null}
 
-      <div className="absolute inset-x-0 top-0 h-[760px] bg-[radial-gradient(circle_at_top_left,_rgba(168,245,229,0.18),_transparent_20%),radial-gradient(circle_at_top_right,_rgba(111,211,255,0.18),_transparent_24%),linear-gradient(180deg,_#061b1d_0%,_#10263a_38%,_#39255a_72%,_#5e3f86_100%)]" />
+      <div className="absolute inset-x-0 top-0 h-190 bg-[radial-gradient(circle_at_top_left,rgba(168,245,229,0.18),transparent_20%),radial-gradient(circle_at_top_right,rgba(111,211,255,0.18),transparent_24%),linear-gradient(180deg,#061b1d_0%,#10263a_38%,#39255a_72%,#5e3f86_100%)]" />
       <header className="sticky top-0 z-30 px-4 pt-4 sm:px-6 sm:pt-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between rounded-[1.75rem] border border-white/55 bg-white/92 px-5 py-3 text-slate-900 shadow-[0_18px_40px_rgba(45,88,135,0.12)] backdrop-blur-xl sm:px-7 sm:py-4">
           <div className="flex items-center gap-2.5">
@@ -706,7 +706,7 @@ export default function Home() {
                 </div>
 
                 {items.length > 0 ? (
-                  <div className="-mr-1 mt-5 grid max-h-[560px] gap-3 overflow-y-auto pr-1 sm:-mr-2 sm:pr-2 xl:grid-cols-2">
+                  <div className="-mr-1 mt-5 grid max-h-140 gap-3 overflow-y-auto pr-1 sm:-mr-2 sm:pr-2 xl:grid-cols-2">
                     {items.map((it) => {
                       const groups = groupKeys(it.grouped);
                       const hasGroups = groups.length > 0;
@@ -726,7 +726,7 @@ export default function Home() {
                                   </span>
                                   {it.subjectName &&
                                   it.subjectName !== it.course ? (
-                                    <span className="min-w-0 break-words text-xs text-slate-500 sm:text-sm">
+                                    <span className="min-w-0 wrap-break-word text-xs text-slate-500 sm:text-sm">
                                       {it.subjectName}
                                     </span>
                                   ) : null}
@@ -758,7 +758,7 @@ export default function Home() {
                               </Button>
                             </div>
 
-                            <div className="w-full min-w-0 rounded-2xl bg-slate-100 px-3 py-2 sm:max-w-[260px]">
+                            <div className="w-full min-w-0 rounded-2xl bg-slate-100 px-3 py-2 sm:max-w-65">
                               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                                 Color
                               </p>
@@ -990,7 +990,7 @@ export default function Home() {
                                               }
                                               className="h-3.5 w-3.5 cursor-pointer rounded accent-teal-500"
                                             />
-                                            <span className="min-w-0 flex-1 break-words font-mono text-xs text-slate-800">
+                                            <span className="min-w-0 flex-1 wrap-break-word font-mono text-xs text-slate-800">
                                               {it.course}{" "}
                                               <span className="font-semibold">
                                                 {g}
@@ -1009,7 +1009,7 @@ export default function Home() {
                     })}
                   </div>
                 ) : (
-                  <div className="mt-5 flex min-h-[280px] flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-[#faf7f0] px-5 py-10 text-center">
+                  <div className="mt-5 flex min-h-70 flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-[#faf7f0] px-5 py-10 text-center">
                     <CalendarX2 className="h-10 w-10 text-slate-300" />
                     <p className="mt-3 text-base font-semibold text-slate-900">
                       No subjects added yet
@@ -1093,11 +1093,11 @@ export default function Home() {
         </section>
 
         {items.length > 0 && (
-          <section className="relative overflow-hidden bg-[linear-gradient(180deg,_#2e1d52_0%,_#17182d_100%)] py-12 text-white sm:py-16">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(125,244,195,0.12),_transparent_30%)]" />
+          <section className="relative overflow-hidden bg-[linear-gradient(180deg,#2e1d52_0%,#17182d_100%)] py-12 text-white sm:py-16">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(125,244,195,0.12),transparent_30%)]" />
             <div className="mx-auto max-w-6xl px-4 sm:px-6">
               {combinedEntries.length === 0 ? (
-                <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-white/10 bg-white/8 px-5 py-12 text-center backdrop-blur-sm">
+                <div className="flex min-h-65 flex-col items-center justify-center rounded-[2rem] border border-white/10 bg-white/8 px-5 py-12 text-center backdrop-blur-sm">
                   <CalendarX2 className="h-10 w-10 text-white/35" />
                   <p className="mt-3 text-lg font-semibold text-white">
                     Select groups to generate your class canvas

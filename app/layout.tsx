@@ -10,15 +10,16 @@ const onest = Onest({
 });
 
 export const metadata: Metadata = {
-  title: "UiTM Class Canvas",
-  description: "Search UiTM class schedules, pick your groups, and turn your final timetable into a custom wallpaper.",
+  title: "UiTM Schedule",
+  description:
+    "Search UiTM class schedules, pick your groups, and turn your final timetable into a custom wallpaper.",
   metadataBase: new URL("https://uitm-timetable.vercel.app"),
   openGraph: {
-    title: "UiTM Class Canvas",
+    title: "UiTM Schedule",
     description:
       "Search UiTM class schedules, pick your groups, and turn your final timetable into a custom wallpaper.",
     url: "https://uitm-timetable.vercel.app",
-    siteName: "UiTM Class Canvas",
+    siteName: "UiTM Schedule",
     type: "website",
     locale: "en_MY",
     images: [
@@ -26,13 +27,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "UiTM Class Canvas preview card",
+        alt: "UiTM Schedule preview card",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "UiTM Class Canvas",
+    title: "UiTM Schedule",
     description:
       "Search UiTM class schedules, pick your groups, and turn your final timetable into a custom wallpaper.",
     images: ["/twitter-image"],
