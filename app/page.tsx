@@ -22,6 +22,7 @@ import { TimetableTable } from "@/components/timetable-table";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WallpaperMaker } from "@/components/wallpaper-maker-v2/wallpaper-maker";
 import { Input } from "@/components/ui/input";
+import { SiteFooter } from "@/components/site-footer";
 import type {
   GroupedTimetable,
   SearchRequest,
@@ -951,10 +952,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        UiTM Timetable Maker — data sourced from{" "}
-        <span className="font-mono">simsweb4.uitm.edu.my</span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
