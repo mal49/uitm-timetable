@@ -850,8 +850,8 @@ export default function Home() {
         )}
 
         {combinedEntries.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="mx-auto w-full max-w-7xl space-y-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="text-lg font-bold tracking-tight">My Timetable</h2>
                 <p className="text-sm text-muted-foreground">
@@ -865,7 +865,7 @@ export default function Home() {
                 {exportError ? <p className="text-xs text-destructive mt-1">{exportError}</p> : null}
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap justify-end">
+              <div className="flex items-center gap-2 flex-wrap lg:justify-end">
                 <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                   <Button
                     variant={viewMode === "grid" ? "secondary" : "ghost"}
@@ -903,7 +903,7 @@ export default function Home() {
             {viewMode === "grid" ? (
               <div className="space-y-2">
                 {clashCount > 0 && (
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-start lg:justify-end">
                     <button
                       onClick={() => setShowClashesOnly((v) => !v)}
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -912,7 +912,7 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-                <div ref={timetableRef} className="mx-auto w-full max-w-5xl">
+                <div ref={timetableRef} className="w-full">
                   <TimetableGrid
                     entries={displayedEntries}
                     course="MY"
@@ -923,7 +923,7 @@ export default function Home() {
             ) : (
               <div className="space-y-2">
                 {clashCount > 0 && (
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-start lg:justify-end">
                     <button
                       onClick={() => setShowClashesOnly((v) => !v)}
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -932,7 +932,7 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-                <div ref={timetableRef} className="mx-auto w-full max-w-5xl">
+                <div ref={timetableRef} className="w-full">
                   <TimetableTable
                     entries={displayedEntries}
                     course="MY"

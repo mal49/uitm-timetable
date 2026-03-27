@@ -1,6 +1,6 @@
 "use client";
 
-import { List, Clock, LayoutGrid, Calendar, FileText, Table } from "lucide-react";
+import { Table } from "lucide-react";
 import { useWallpaper, type LayoutStyle } from "./wallpaper-context";
 import { cn } from "@/lib/utils";
 
@@ -13,36 +13,6 @@ interface LayoutOption {
 
 const layoutOptions: LayoutOption[] = [
   {
-    id: "compact-list",
-    name: "Compact List",
-    description: "Minimalist vertical list",
-    icon: <List className="h-4 w-4" />,
-  },
-  {
-    id: "timeline",
-    name: "Timeline",
-    description: "Visual timeline with blocks",
-    icon: <Clock className="h-4 w-4" />,
-  },
-  {
-    id: "day-cards",
-    name: "Day Cards",
-    description: "Day-by-day card layout",
-    icon: <Calendar className="h-4 w-4" />,
-  },
-  {
-    id: "mini-grid",
-    name: "Mini Grid",
-    description: "Compact matrix view",
-    icon: <LayoutGrid className="h-4 w-4" />,
-  },
-  {
-    id: "agenda",
-    name: "Agenda",
-    description: "Text-focused calendar style",
-    icon: <FileText className="h-4 w-4" />,
-  },
-  {
     id: "wallpaper-table",
     name: "Wallpaper Table",
     description: "Classic timetable board style",
@@ -54,7 +24,7 @@ export function LayoutSelector() {
   const { settings, updateSettings } = useWallpaper();
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 gap-2">
       {layoutOptions.map((layout) => {
         const isSelected = settings.layoutStyle === layout.id;
         

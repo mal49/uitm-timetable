@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { TimetableEntry } from "@/lib/types";
 
 export type LayoutStyle =
@@ -10,7 +10,17 @@ export type LayoutStyle =
   | "mini-grid"
   | "agenda"
   | "wallpaper-table";
-export type ThemeId = "ios-default" | "dark" | "light" | "gradient" | "solid" | "glass" | "custom";
+export type ThemeId =
+  | "ios-default"
+  | "dark"
+  | "light"
+  | "gradient"
+  | "solid"
+  | "glass"
+  | "midnight"
+  | "evergreen"
+  | "terracotta"
+  | "custom";
 export type DensityLevel = "ultra-compact" | "compact" | "comfortable" | "spacious";
 export type BorderStyle = "none" | "subtle" | "bold" | "rounded";
 export type ShadowDepth = "none" | "subtle" | "medium" | "strong";
@@ -43,6 +53,7 @@ export interface WallpaperSettings {
   showLecturer: boolean;
   showDayLabels: boolean;
   showTimeIndicators: boolean;
+  showWidgetPosition: boolean;
   
   // Density
   density: DensityLevel;
@@ -75,7 +86,7 @@ interface WallpaperContextType {
 }
 
 const defaultSettings: WallpaperSettings = {
-  layoutStyle: "compact-list",
+  layoutStyle: "wallpaper-table",
   themeId: "ios-default",
   subjectColors: {},
   autoContrast: true,
@@ -89,6 +100,7 @@ const defaultSettings: WallpaperSettings = {
   showLecturer: false,
   showDayLabels: true,
   showTimeIndicators: true,
+  showWidgetPosition: true,
   density: "compact",
   borderStyle: "subtle",
   shadowDepth: "subtle",
@@ -116,8 +128,16 @@ export function WallpaperProvider({
   const [entries, setEntries] = useState<TimetableEntry[]>(initialEntries);
   const [colorOverrides, setColorOverrides] = useState<Record<string, string>>(initialColorOverrides);
 
+  useEffect(() => {
+    setEntries(initialEntries);
+  }, [initialEntries]);
+
+  useEffect(() => {
+    setColorOverrides(initialColorOverrides);
+  }, [initialColorOverrides]);
+
   const updateSettings = useCallback((updates: Partial<WallpaperSettings>) => {
-    setSettings((prev) => ({ ...prev, ...updates }));
+    setSettings((prev) => ({ ...prev, ...updates, showWidgetPosition: true }));
   }, []);
 
   const resetSettings = useCallback(() => {

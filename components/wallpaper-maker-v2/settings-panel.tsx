@@ -1,6 +1,6 @@
 "use client";
 
-import { Palette, Type, Maximize2, Eye, Wand2 } from "lucide-react";
+import { Palette, Type, Eye, Wand2 } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -9,9 +9,7 @@ import {
 } from "@/components/ui/accordion";
 import { LayoutSelector } from "./layout-selector";
 import { ThemeSelector } from "./theme-selector";
-import { ColorControls } from "./color-controls";
 import { TypographyControls } from "./typography-controls";
-import { DensityControls } from "./density-controls";
 import { VisibilityControls } from "./visibility-controls";
 
 export function SettingsPanel() {
@@ -46,20 +44,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Collapsible Customization Options */}
-        <Accordion type="multiple" className="w-full">
-          {/* Colors */}
-          <AccordionItem value="colors">
-            <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-              <div className="flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                Colors
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <ColorControls />
-            </AccordionContent>
-          </AccordionItem>
-
+        <Accordion multiple className="w-full">
           {/* Typography */}
           <AccordionItem value="typography">
             <AccordionTrigger className="text-sm font-semibold hover:no-underline">
@@ -70,19 +55,6 @@ export function SettingsPanel() {
             </AccordionTrigger>
             <AccordionContent>
               <TypographyControls />
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Density */}
-          <AccordionItem value="density">
-            <AccordionTrigger className="text-sm font-semibold hover:no-underline">
-              <div className="flex items-center gap-2">
-                <Maximize2 className="h-4 w-4" />
-                Density & Spacing
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <DensityControls />
             </AccordionContent>
           </AccordionItem>
 

@@ -45,7 +45,10 @@ export function TypographyControls() {
         <Label htmlFor="font-weight" className="text-xs">Font Weight</Label>
         <Select
           value={settings.fontWeight}
-          onValueChange={(value: "light" | "regular" | "medium" | "bold") => updateSettings({ fontWeight: value })}
+          onValueChange={(value) => {
+            if (!value) return;
+            updateSettings({ fontWeight: value });
+          }}
         >
           <SelectTrigger id="font-weight" className="h-8 text-xs">
             <SelectValue />

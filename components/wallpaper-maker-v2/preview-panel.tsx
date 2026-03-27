@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { toJpeg, toPng } from "html-to-image";
 import Image from "next/image";
-import { Smartphone, Download } from "lucide-react";
+import { Smartphone, Download, Bolt, Camera, Wifi, BatteryFull, Signal, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWallpaper } from "./wallpaper-context";
 import { getThemePreset } from "./themes/theme-presets";
@@ -37,11 +37,30 @@ function getLandscapeRightPadding(layoutStyle: LayoutStyle): string {
   }
 }
 
+function formatLockscreenDate(date: Date) {
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
+}
+
+function formatLockscreenTime(date: Date) {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
 export function PreviewPanel() {
   const { settings, updateSettings, entries, colorOverrides } = useWallpaper();
   const theme = getThemePreset(settings.themeId);
-  const wallpaperRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const now = new Date();
+  const lockDate = formatLockscreenDate(now);
+  const lockTime = formatLockscreenTime(now);
 
   // Render the selected layout
   const renderLayout = (layoutStyle: LayoutStyle) => {
@@ -72,9 +91,12 @@ export function PreviewPanel() {
     bold: 700,
   };
   const landscapeRightPadding = getLandscapeRightPadding(settings.layoutStyle);
+  const lockscreenTextColor = theme.lockscreenTextColor ?? "#ffffff";
+  const lockscreenTitleColor = theme.lockscreenTitleColor ?? lockscreenTextColor;
+  const widgetTextColor = theme.id === "light" || theme.id === "glass" ? "#1f1a17" : "#ffffff";
 
   async function handleExport() {
-    if (!wallpaperRef.current || isExporting) {
+    if (!exportRef.current || isExporting) {
       return;
     }
 
@@ -91,8 +113,8 @@ export function PreviewPanel() {
 
       const dataUrl =
         settings.exportFormat === "jpeg"
-          ? await toJpeg(wallpaperRef.current, exportOptions)
-          : await toPng(wallpaperRef.current, exportOptions);
+          ? await toJpeg(exportRef.current, exportOptions)
+          : await toPng(exportRef.current, exportOptions);
 
       const link = document.createElement("a");
       link.download = `${filenameBase}.${settings.exportFormat}`;
@@ -168,7 +190,6 @@ export function PreviewPanel() {
                   }}
                 >
                   <div
-                    ref={wallpaperRef}
                     className="w-full h-full relative overflow-hidden"
                     style={{
                       background: theme.background,
@@ -179,11 +200,94 @@ export function PreviewPanel() {
                     }}
                   >
                     <div
+                      ref={exportRef}
+                      className="absolute inset-0 overflow-hidden"
+                      style={{
+                        background: theme.background,
+                        fontSize: `${settings.fontSize}em`,
+                        fontWeight: fontWeightMap[settings.fontWeight],
+                        borderRadius: "42px",
+                        clipPath: "inset(0 round 42px)",
+                      }}
+                    >
+                      <div
+                        className="h-full w-full overflow-hidden"
+                        style={{
+                          boxSizing: "border-box",
+                          paddingTop: settings.showWidgetPosition ? "236px" : "172px",
+                          paddingBottom: "74px",
+                        }}
+                      >
+                        {renderLayout(settings.layoutStyle)}
+                      </div>
+                    </div>
+
+                    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-6 pt-7">
+                      <div
+                        className="flex items-center justify-between text-[10px] font-medium tracking-[0.02em]"
+                        style={{ color: lockscreenTextColor }}
+                      >
+                        <span>Fido</span>
+                        <div className="flex items-center gap-1.5 opacity-90">
+                          <Signal className="h-3 w-3" strokeWidth={2.2} />
+                          <Wifi className="h-3 w-3" strokeWidth={2.2} />
+                          <BatteryFull className="h-3.5 w-3.5" strokeWidth={2.2} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pointer-events-none absolute inset-x-0 top-[98px] z-20 text-center">
+                      <p
+                        className="text-[13px] font-medium tracking-[0.01em] opacity-90"
+                        style={{ color: lockscreenTitleColor }}
+                      >
+                        {lockDate}
+                      </p>
+                      <p
+                        className="mt-1 text-[60px] font-semibold leading-none tracking-[-0.06em]"
+                        style={{ color: lockscreenTextColor }}
+                      >
+                        {lockTime}
+                      </p>
+                    </div>
+
+                    {settings.showWidgetPosition ? (
+                      <div className="pointer-events-none absolute inset-x-0 top-[192px] z-20 flex justify-center">
+                        <div
+                          className="flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.10)] backdrop-blur-sm"
+                          style={{
+                            color: widgetTextColor,
+                            background: "rgba(255,255,255,0.42)",
+                            borderColor: "rgba(0,0,0,0.12)",
+                          }}
+                        >
+                          <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.1} />
+                          <span className="text-[11px] font-semibold tracking-[0.01em]">
+                            Widget Position
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="pointer-events-none absolute inset-x-0 bottom-9 z-20 flex items-center justify-between px-7">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/22 text-white shadow-[0_10px_30px_rgba(0,0,0,0.16)] backdrop-blur-sm">
+                        <Bolt className="h-4 w-4" strokeWidth={2.2} />
+                      </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/22 text-white shadow-[0_10px_30px_rgba(0,0,0,0.16)] backdrop-blur-sm">
+                        <Camera className="h-4 w-4" strokeWidth={2.2} />
+                      </div>
+                    </div>
+
+                    <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center">
+                      <div className="h-1.5 w-28 rounded-full bg-white/85" />
+                    </div>
+
+                    <div
                       className="h-full w-full overflow-hidden"
                       style={{
                         boxSizing: "border-box",
-                        paddingTop: "56px",
-                        paddingBottom: "14px",
+                        paddingTop: settings.showWidgetPosition ? "236px" : "172px",
+                        paddingBottom: "74px",
                       }}
                     >
                       {renderLayout(settings.layoutStyle)}
@@ -213,7 +317,6 @@ export function PreviewPanel() {
                   }}
                 >
                   <div
-                    ref={wallpaperRef}
                     className="w-full h-full relative overflow-hidden"
                     style={{
                       background: theme.background,
@@ -224,11 +327,65 @@ export function PreviewPanel() {
                     }}
                   >
                     <div
+                      ref={exportRef}
+                      className="absolute inset-0 overflow-hidden"
+                      style={{
+                        background: theme.background,
+                        fontSize: `${settings.fontSize}em`,
+                        fontWeight: fontWeightMap[settings.fontWeight],
+                        borderRadius: "24px",
+                        clipPath: "inset(0 round 24px)",
+                      }}
+                    >
+                      <div
+                        className="wallpaper-preview-shell h-full w-full overflow-hidden"
+                        style={{
+                          boxSizing: "border-box",
+                          paddingTop: settings.showWidgetPosition ? "58px" : "42px",
+                          paddingBottom: "16px",
+                          paddingLeft: "10px",
+                          paddingRight: landscapeRightPadding,
+                        }}
+                      >
+                        {renderLayout(settings.layoutStyle)}
+                      </div>
+                    </div>
+
+                    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between px-5 pt-2">
+                      <p
+                        className="text-[9px] font-medium opacity-90"
+                        style={{ color: lockscreenTitleColor }}
+                      >
+                        {lockDate}
+                      </p>
+                      <p
+                        className="text-[28px] font-semibold leading-none tracking-[-0.05em]"
+                        style={{ color: lockscreenTextColor }}
+                      >
+                        {lockTime}
+                      </p>
+                    </div>
+                    {settings.showWidgetPosition ? (
+                      <div className="pointer-events-none absolute inset-x-0 top-[34px] z-20 flex justify-center">
+                        <div
+                          className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 backdrop-blur-sm"
+                          style={{
+                            color: widgetTextColor,
+                            background: "rgba(255,255,255,0.42)",
+                            borderColor: "rgba(0,0,0,0.12)",
+                          }}
+                        >
+                          <CalendarDays className="h-3 w-3" strokeWidth={2.1} />
+                          <span className="text-[9px] font-semibold">Widget</span>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div
                       className="wallpaper-preview-shell h-full w-full overflow-hidden"
                       style={{
                         boxSizing: "border-box",
-                        paddingTop: "12px",
-                        paddingBottom: "12px",
+                        paddingTop: settings.showWidgetPosition ? "58px" : "42px",
+                        paddingBottom: "16px",
                         paddingLeft: "10px",
                         paddingRight: landscapeRightPadding,
                       }}
