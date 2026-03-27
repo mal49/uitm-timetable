@@ -43,7 +43,9 @@ function toSoftTint(hexColor: string, alpha = 0.18): string {
 }
 
 function parseRgbChannels(value: string): [number, number, number] | null {
-  const hexMatch = value.trim().match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  const hexMatch = value
+    .trim()
+    .match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
   if (hexMatch) {
     const [, r, g, b] = hexMatch;
     return [parseInt(r, 16), parseInt(g, 16), parseInt(b, 16)];
@@ -71,7 +73,9 @@ function formatVenueLabel(venue: string): string {
   if (/online/i.test(trimmed)) return "Online";
   if (/virtual\s*lab/i.test(trimmed)) return "Virtual Lab";
 
-  const labCodeMatch = trimmed.match(/\b(MK|DK|BK|SK|BILIK)\s*-?\s*(\d+[A-Z]?)\b/i);
+  const labCodeMatch = trimmed.match(
+    /\b(MK|DK|BK|SK|BILIK)\s*-?\s*(\d+[A-Z]?)\b/i,
+  );
   if (labCodeMatch) {
     const [, prefix, number] = labCodeMatch;
     return `${prefix.toUpperCase()}${number.toUpperCase()}`;
@@ -80,10 +84,7 @@ function formatVenueLabel(venue: string): string {
   const multimediaMatch = trimmed.match(/\bmultimedia\b/i);
   if (multimediaMatch) return "Multimedia";
 
-  const tokens = trimmed
-    .replace(/[(),]/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
+  const tokens = trimmed.replace(/[(),]/g, " ").split(/\s+/).filter(Boolean);
 
   if (tokens.length === 1) {
     return tokens[0].length > 12 ? `${tokens[0].slice(0, 12)}...` : tokens[0];
@@ -118,7 +119,10 @@ function assignOverlapColumns(blocks: TableBlock[]): TableBlock[] {
   for (const dayIndex of [0, 1, 2, 3, 4]) {
     const dayBlocks = blocks
       .filter((block) => block.dayIndex === dayIndex)
-      .sort((a, b) => a.startMinutes - b.startMinutes || a.endMinutes - b.endMinutes);
+      .sort(
+        (a, b) =>
+          a.startMinutes - b.startMinutes || a.endMinutes - b.endMinutes,
+      );
 
     let cluster: TableBlock[] = [];
     let clusterEnd = -1;
@@ -128,7 +132,9 @@ function assignOverlapColumns(blocks: TableBlock[]): TableBlock[] {
 
       const laneEndTimes: number[] = [];
       const assigned = cluster.map((block) => {
-        let laneIndex = laneEndTimes.findIndex((endTime) => endTime <= block.startMinutes);
+        let laneIndex = laneEndTimes.findIndex(
+          (endTime) => endTime <= block.startMinutes,
+        );
         if (laneIndex === -1) {
           laneIndex = laneEndTimes.length;
           laneEndTimes.push(block.endMinutes);
@@ -143,7 +149,9 @@ function assignOverlapColumns(blocks: TableBlock[]): TableBlock[] {
       });
 
       const columnCount = Math.max(1, laneEndTimes.length);
-      resolvedBlocks.push(...assigned.map((block) => ({ ...block, columnCount })));
+      resolvedBlocks.push(
+        ...assigned.map((block) => ({ ...block, columnCount })),
+      );
       cluster = [];
       clusterEnd = -1;
     };
@@ -172,7 +180,10 @@ function assignOverlapColumns(blocks: TableBlock[]): TableBlock[] {
   return resolvedBlocks;
 }
 
-export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps) {
+export function WallpaperTable({
+  entries,
+  colorOverrides,
+}: WallpaperTableProps) {
   const { settings } = useWallpaper();
   const theme = getThemePreset(settings.themeId);
   const densityConfig = {
@@ -272,12 +283,17 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
       return dayIndex >= 0 && entry.start && entry.end;
     });
 
-    const startCandidates = validEntries.map((entry) => timeToMinutes(entry.start));
+    const startCandidates = validEntries.map((entry) =>
+      timeToMinutes(entry.start),
+    );
     const endCandidates = validEntries.map((entry) => timeToMinutes(entry.end));
 
     const earliestHour =
       startCandidates.length > 0
-        ? Math.max(MIN_VISIBLE_HOUR, Math.floor(Math.min(...startCandidates) / 60))
+        ? Math.max(
+            MIN_VISIBLE_HOUR,
+            Math.floor(Math.min(...startCandidates) / 60),
+          )
         : 8;
     const latestHour =
       endCandidates.length > 0
@@ -286,7 +302,10 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
 
     const endHour = Math.max(latestHour, earliestHour + MIN_HOUR_SPAN);
     const boundedEndHour = Math.min(MAX_VISIBLE_HOUR, endHour);
-    const startHour = Math.max(MIN_VISIBLE_HOUR, Math.min(earliestHour, boundedEndHour - MIN_HOUR_SPAN));
+    const startHour = Math.max(
+      MIN_VISIBLE_HOUR,
+      Math.min(earliestHour, boundedEndHour - MIN_HOUR_SPAN),
+    );
     const totalHours = Math.max(MIN_HOUR_SPAN, boundedEndHour - startHour);
     const startMinutes = startHour * 60;
     const endMinutes = boundedEndHour * 60;
@@ -294,44 +313,45 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
 
     const tableBlocks = assignOverlapColumns(
       entries
-      .map((entry) => {
-        const dayIndex = getDayIndex(entry.day || "");
-        if (dayIndex < 0) return null;
+        .map((entry) => {
+          const dayIndex = getDayIndex(entry.day || "");
+          if (dayIndex < 0) return null;
 
-        const start = timeToMinutes(entry.start || "00:00");
-        const end = timeToMinutes(entry.end || "00:00");
-        const clippedStart = Math.max(start, startMinutes);
-        const clippedEnd = Math.min(end, endMinutes);
+          const start = timeToMinutes(entry.start || "00:00");
+          const end = timeToMinutes(entry.end || "00:00");
+          const clippedStart = Math.max(start, startMinutes);
+          const clippedEnd = Math.min(end, endMinutes);
 
-        if (clippedEnd <= clippedStart) return null;
+          if (clippedEnd <= clippedStart) return null;
 
-        const top = ((clippedStart - startMinutes) / totalMinutes) * 100;
-        const height = ((clippedEnd - clippedStart) / totalMinutes) * 100;
-        const colorKey = entry.subjectKey || entry.course || "DEFAULT";
-        const borderColor = colorOverrides[colorKey] || "#1f2937";
-        const courseCode = entry.course || entry.subjectKey || entry.section || "CLASS";
-        const normalizedCourseCode = courseCode.replace(/\s+/g, "").trim();
+          const top = ((clippedStart - startMinutes) / totalMinutes) * 100;
+          const height = ((clippedEnd - clippedStart) / totalMinutes) * 100;
+          const colorKey = entry.subjectKey || entry.course || "DEFAULT";
+          const borderColor = colorOverrides[colorKey] || "#1f2937";
+          const courseCode =
+            entry.course || entry.subjectKey || entry.section || "CLASS";
+          const normalizedCourseCode = courseCode.replace(/\s+/g, "").trim();
 
-        return {
-          id: `${entry.day}-${entry.start}-${entry.end}-${courseCode}`,
-          dayIndex,
-          top,
-          height,
-          durationMinutes: clippedEnd - clippedStart,
-          courseCode: normalizedCourseCode,
-          subjectName: entry.subjectName || "",
-          venue: entry.venue || "",
-          lecturer: entry.lecturer || "",
-          start: entry.start,
-          end: entry.end,
-          borderColor,
-          startMinutes: clippedStart,
-          endMinutes: clippedEnd,
-          columnIndex: 0,
-          columnCount: 1,
-        };
-      })
-      .filter((block): block is TableBlock => block !== null)
+          return {
+            id: `${entry.day}-${entry.start}-${entry.end}-${courseCode}`,
+            dayIndex,
+            top,
+            height,
+            durationMinutes: clippedEnd - clippedStart,
+            courseCode: normalizedCourseCode,
+            subjectName: entry.subjectName || "",
+            venue: entry.venue || "",
+            lecturer: entry.lecturer || "",
+            start: entry.start,
+            end: entry.end,
+            borderColor,
+            startMinutes: clippedStart,
+            endMinutes: clippedEnd,
+            columnIndex: 0,
+            columnCount: 1,
+          };
+        })
+        .filter((block): block is TableBlock => block !== null),
     );
 
     return {
@@ -341,17 +361,24 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
     };
   }, [entries, colorOverrides]);
 
-  const hourLabels = Array.from({ length: scheduleMetrics.totalHours }).map((_, index) => (
-    scheduleMetrics.startHour + index
-  ));
+  const hourLabels = Array.from({ length: scheduleMetrics.totalHours }).map(
+    (_, index) => scheduleMetrics.startHour + index,
+  );
   const timeColumnWidth = densityConfig.timeColumnWidth;
-  const tableBackground = theme.overlayBackground ?? "rgba(255, 255, 255, 0.95)";
+  const tableBackground =
+    theme.overlayBackground ?? "rgba(255, 255, 255, 0.95)";
   const tableText = theme.overlayTextColor ?? "#0f172a";
   const isDarkOverlay = getPerceivedBrightness(tableBackground) < 150;
-  const tableBorder = isDarkOverlay ? "rgba(248, 250, 252, 0.34)" : "rgba(15, 23, 42, 0.24)";
-  const tableGrid = isDarkOverlay ? "rgba(248, 250, 252, 0.24)" : "rgba(15, 23, 42, 0.18)";
+  const tableBorder = isDarkOverlay
+    ? "rgba(248, 250, 252, 0.34)"
+    : "rgba(15, 23, 42, 0.24)";
+  const tableGrid = isDarkOverlay
+    ? "rgba(248, 250, 252, 0.24)"
+    : "rgba(15, 23, 42, 0.18)";
   const tableHeaderText = tableText;
-  const tableSubtleText = isDarkOverlay ? "rgba(248, 250, 252, 0.9)" : "rgba(15, 23, 42, 0.72)";
+  const tableSubtleText = isDarkOverlay
+    ? "rgba(248, 250, 252, 0.9)"
+    : "rgba(15, 23, 42, 0.72)";
   const subjectText = tableText;
 
   return (
@@ -362,18 +389,18 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
         paddingRight: densityConfig.outerPaddingX,
         paddingTop: densityConfig.outerPaddingTop,
         paddingBottom: densityConfig.outerPaddingBottom,
-      }}
-    >
+      }}>
       <div
         className="mx-auto mt-0 rounded-[15px] overflow-hidden shadow-[0_14px_30px_rgba(0,0,0,0.08)]"
         style={{
           width: densityConfig.boardWidth,
           height: densityConfig.boardHeight,
-          background: isDarkOverlay ? "rgba(30, 41, 59, 0.96)" : tableBackground,
+          background: isDarkOverlay
+            ? "rgba(30, 41, 59, 0.96)"
+            : tableBackground,
           color: tableText,
           border: `1px solid ${tableBorder}`,
-        }}
-      >
+        }}>
         <div
           className="flex items-center justify-center font-semibold tracking-wide"
           style={{
@@ -381,8 +408,7 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
             fontSize: densityConfig.titleSize,
             borderBottom: `1px solid ${tableBorder}`,
             color: tableHeaderText,
-          }}
-        >
+          }}>
           {settings.titleText || "Class Canvas"}
         </div>
 
@@ -393,10 +419,13 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
             gridTemplateRows: settings.showDayLabels
               ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
               : "minmax(0, 1fr)",
-          }}
-        >
+          }}>
           {settings.showDayLabels ? (
-            <div className="grid" style={{ gridTemplateColumns: `${timeColumnWidth} repeat(5, minmax(0, 1fr))` }}>
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `${timeColumnWidth} repeat(5, minmax(0, 1fr))`,
+              }}>
               <div style={{ borderRight: `1px solid ${tableGrid}` }} />
               {DAYS.map((day) => (
                 <div
@@ -405,33 +434,42 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
                   style={{
                     fontSize: densityConfig.dayLabelSize,
                     borderBottom: `1px solid ${tableGrid}`,
-                    borderRight: day === DAYS[DAYS.length - 1] ? "none" : `1px solid ${tableGrid}`,
+                    borderRight:
+                      day === DAYS[DAYS.length - 1]
+                        ? "none"
+                        : `1px solid ${tableGrid}`,
                     color: tableHeaderText,
-                  }}
-                >
+                  }}>
                   {day}
                 </div>
               ))}
             </div>
           ) : null}
 
-          <div className="grid min-h-0" style={{ gridTemplateColumns: `${timeColumnWidth} repeat(5, minmax(0, 1fr))` }}>
+          <div
+            className="grid min-h-0"
+            style={{
+              gridTemplateColumns: `${timeColumnWidth} repeat(5, minmax(0, 1fr))`,
+            }}>
             {settings.showTimeIndicators ? (
               <div
                 className="grid"
-                style={{ gridTemplateRows: `repeat(${scheduleMetrics.totalHours}, minmax(0, 1fr))`, borderRight: `1px solid ${tableGrid}` }}
-              >
+                style={{
+                  gridTemplateRows: `repeat(${scheduleMetrics.totalHours}, minmax(0, 1fr))`,
+                  borderRight: `1px solid ${tableGrid}`,
+                }}>
                 {hourLabels.map((hour) => {
                   return (
                     <div
                       key={hour}
                       className="flex items-center justify-center text-center px-0.5"
-                      style={{ borderBottom: `1px solid ${tableGrid}` }}
-                    >
+                      style={{ borderBottom: `1px solid ${tableGrid}` }}>
                       <span
                         className="font-semibold leading-none tracking-[-0.02em]"
-                        style={{ color: tableSubtleText, fontSize: densityConfig.timeLabelSize }}
-                      >
+                        style={{
+                          color: tableSubtleText,
+                          fontSize: densityConfig.timeLabelSize,
+                        }}>
                         {formatMinimalHourLabel(hour)}
                       </span>
                     </div>
@@ -446,32 +484,47 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
               <div
                 key={day}
                 className="relative min-h-0"
-                style={{ borderRight: day === DAYS[DAYS.length - 1] ? "none" : `1px solid ${tableGrid}` }}
-              >
+                style={{
+                  borderRight:
+                    day === DAYS[DAYS.length - 1]
+                      ? "none"
+                      : `1px solid ${tableGrid}`,
+                }}>
                 <div
                   className="absolute inset-0 grid"
-                  style={{ gridTemplateRows: `repeat(${scheduleMetrics.totalHours}, minmax(0, 1fr))` }}
-                >
+                  style={{
+                    gridTemplateRows: `repeat(${scheduleMetrics.totalHours}, minmax(0, 1fr))`,
+                  }}>
                   {hourLabels.map((hour) => (
-                    <div key={`${day}-${hour}`} style={{ borderBottom: `1px solid ${tableGrid}` }} />
+                    <div
+                      key={`${day}-${hour}`}
+                      style={{ borderBottom: `1px solid ${tableGrid}` }}
+                    />
                   ))}
                 </div>
 
                 {scheduleMetrics.tableBlocks
                   .filter((block) => block.dayIndex === dayIndex)
-                  .map((block) => (
+                  .map((block) =>
                     (() => {
                       const isCompact = block.durationMinutes <= 75;
                       const isTight = isCompact || block.columnCount > 1;
                       const venueLabel = formatVenueLabel(block.venue);
-                      const timeLabel = settings.showTime && !isTight
-                        ? settings.showTimeIndicators
-                          ? block.start
-                          : `${block.start} - ${block.end}`
-                        : "";
-                      const codeTextSize = isTight ? densityConfig.codeTight : densityConfig.codeNormal;
-                      const venueTextSize = isTight ? densityConfig.venueTight : densityConfig.venueNormal;
-                      const timeTextSize = isTight ? densityConfig.timeTight : densityConfig.timeNormal;
+                      const timeLabel =
+                        settings.showTime && !isTight
+                          ? settings.showTimeIndicators
+                            ? block.start
+                            : `${block.start} - ${block.end}`
+                          : "";
+                      const codeTextSize = isTight
+                        ? densityConfig.codeTight
+                        : densityConfig.codeNormal;
+                      const venueTextSize = isTight
+                        ? densityConfig.venueTight
+                        : densityConfig.venueNormal;
+                      const timeTextSize = isTight
+                        ? densityConfig.timeTight
+                        : densityConfig.timeNormal;
 
                       const widthPercent = 100 / block.columnCount;
                       const inset = 2;
@@ -491,47 +544,65 @@ export function WallpaperTable({ entries, colorOverrides }: WallpaperTableProps)
                             paddingTop: densityConfig.cardPaddingY,
                             paddingBottom: densityConfig.cardPaddingY,
                             borderColor: block.borderColor,
-                            backgroundColor: isDarkOverlay ? "rgba(255, 255, 255, 0.08)" : toSoftTint(block.borderColor, 0.24),
-                          }}
-                        >
+                            backgroundColor: isDarkOverlay
+                              ? "rgba(255, 255, 255, 0.08)"
+                              : toSoftTint(block.borderColor, 0.24),
+                          }}>
                           {settings.showCourseCode ? (
                             <div
                               className="max-w-full whitespace-nowrap overflow-hidden font-black tracking-[-0.04em]"
-                              style={{ color: subjectText, fontSize: codeTextSize, lineHeight: 1 }}
-                            >
+                              style={{
+                                color: subjectText,
+                                fontSize: codeTextSize,
+                                lineHeight: 1,
+                              }}>
                               {block.courseCode}
                             </div>
                           ) : null}
                           {settings.showVenue && venueLabel ? (
                             <div
-                              className="mt-0.5 max-w-full whitespace-normal break-words font-semibold"
-                              style={{ color: tableSubtleText, fontSize: venueTextSize, lineHeight: 1.05 }}
-                            >
+                              className="mt-0.5 max-w-full whitespace-normal wrap-break-word font-semibold"
+                              style={{
+                                color: tableSubtleText,
+                                fontSize: venueTextSize,
+                                lineHeight: 1.05,
+                              }}>
                               {venueLabel}
                             </div>
                           ) : null}
-                          {!isCompact && settings.showCourseName && block.subjectName ? (
-                            <div className="mt-0.5 max-w-full whitespace-normal break-words text-[6.3px] leading-[1.1] font-medium" style={{ color: tableSubtleText }}>
+                          {!isCompact &&
+                          settings.showCourseName &&
+                          block.subjectName ? (
+                            <div
+                              className="mt-0.5 max-w-full whitespace-normal wrap-break-word text-[6.3px] leading-[1.1] font-medium"
+                              style={{ color: tableSubtleText }}>
                               {block.subjectName}
                             </div>
                           ) : null}
-                          {!isCompact && settings.showLecturer && block.lecturer ? (
-                            <div className="max-w-full whitespace-normal break-words text-[5.75px] leading-[1.1] mt-0.5 font-medium" style={{ color: tableSubtleText }}>
+                          {!isCompact &&
+                          settings.showLecturer &&
+                          block.lecturer ? (
+                            <div
+                              className="max-w-full whitespace-normal wrap-break-word text-[5.75px] leading-[1.1] mt-0.5 font-medium"
+                              style={{ color: tableSubtleText }}>
                               {block.lecturer}
                             </div>
                           ) : null}
                           {timeLabel ? (
                             <div
-                              className="mt-0.5 max-w-full whitespace-normal break-words font-medium"
-                              style={{ color: tableSubtleText, fontSize: timeTextSize, lineHeight: 1.05 }}
-                            >
+                              className="mt-0.5 max-w-full whitespace-normal wrap-break-word font-medium"
+                              style={{
+                                color: tableSubtleText,
+                                fontSize: timeTextSize,
+                                lineHeight: 1.05,
+                              }}>
                               {timeLabel}
                             </div>
                           ) : null}
                         </div>
                       );
-                    })()
-                  ))}
+                    })(),
+                  )}
               </div>
             ))}
           </div>
