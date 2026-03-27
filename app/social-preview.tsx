@@ -26,7 +26,6 @@ export function SocialPreviewCard() {
       <div
         style={{
           position: "relative",
-          zIndex: 1,
           width: "100%",
           display: "flex",
           alignItems: "stretch",
@@ -106,16 +105,18 @@ export function SocialPreviewCard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div
                 style={{
+                  display: "flex",
+                  flexDirection: "column",
                   fontSize: 72,
                   lineHeight: 0.94,
                   fontWeight: 800,
                   letterSpacing: "-0.05em",
                   maxWidth: 560,
+                  gap: "4px",
                 }}
               >
-                Build your schedule.
-                <br />
-                Turn it into wallpaper.
+                <span>Build your schedule.</span>
+                <span>Turn it into wallpaper.</span>
               </div>
               <div
                 style={{
