@@ -53,6 +53,16 @@ function formatLockscreenTime(date: Date) {
   }).format(date);
 }
 
+const PORTRAIT_EXPORT_SIZE = {
+  width: 390,
+  height: 844,
+};
+
+const LANDSCAPE_EXPORT_SIZE = {
+  width: 844,
+  height: 390,
+};
+
 export function PreviewPanel() {
   const { settings, updateSettings, entries, colorOverrides } = useWallpaper();
   const theme = getThemePreset(settings.themeId);
@@ -95,6 +105,10 @@ export function PreviewPanel() {
   const lockscreenTextColor = theme.lockscreenTextColor ?? "#ffffff";
   const lockscreenTitleColor = theme.lockscreenTitleColor ?? lockscreenTextColor;
   const widgetTextColor = theme.id === "light" || theme.id === "glass" ? "#1f1a17" : "#ffffff";
+  const exportSize =
+    settings.orientation === "portrait"
+      ? PORTRAIT_EXPORT_SIZE
+      : LANDSCAPE_EXPORT_SIZE;
 
   async function handleExport() {
     if (!exportRef.current || isExporting) {
@@ -107,7 +121,7 @@ export function PreviewPanel() {
     try {
       const filenameBase = `uitm-class-canvas-${settings.layoutStyle}-${settings.orientation}`;
       const exportOptions = {
-        pixelRatio: 2,
+        pixelRatio: 3,
         quality: settings.exportQuality,
         cacheBust: true,
         // Prevent html-to-image font embedding crash when a stylesheet font entry is undefined.
@@ -138,6 +152,55 @@ export function PreviewPanel() {
       setIsExporting(false);
     }
   }
+
+  const wallpaperScene =
+    settings.orientation === "portrait" ? (
+      <div
+        className="relative overflow-hidden"
+        style={{
+          width: exportSize.width,
+          height: exportSize.height,
+          background: theme.background,
+          fontSize: `${settings.fontSize}em`,
+          fontWeight: fontWeightMap[settings.fontWeight],
+        }}
+      >
+        <div
+          className="h-full w-full overflow-hidden"
+          style={{
+            boxSizing: "border-box",
+            paddingTop: settings.showWidgetPosition ? "236px" : "172px",
+            paddingBottom: "74px",
+          }}
+        >
+          {renderLayout(settings.layoutStyle)}
+        </div>
+      </div>
+    ) : (
+      <div
+        className="relative overflow-hidden"
+        style={{
+          width: exportSize.width,
+          height: exportSize.height,
+          background: theme.background,
+          fontSize: `${settings.fontSize}em`,
+          fontWeight: fontWeightMap[settings.fontWeight],
+        }}
+      >
+        <div
+          className="wallpaper-preview-shell h-full w-full overflow-hidden"
+          style={{
+            boxSizing: "border-box",
+            paddingTop: settings.showWidgetPosition ? "58px" : "42px",
+            paddingBottom: "16px",
+            paddingLeft: "10px",
+            paddingRight: landscapeRightPadding,
+          }}
+        >
+          {renderLayout(settings.layoutStyle)}
+        </div>
+      </div>
+    );
 
   return (
     <div className="relative h-full min-h-0 flex flex-col">
@@ -214,7 +277,6 @@ export function PreviewPanel() {
                     }}
                   >
                     <div
-                      ref={exportRef}
                       className="absolute inset-0 overflow-hidden"
                       style={{
                         background: theme.background,
@@ -341,7 +403,6 @@ export function PreviewPanel() {
                     }}
                   >
                     <div
-                      ref={exportRef}
                       className="absolute inset-0 overflow-hidden"
                       style={{
                         background: theme.background,
@@ -419,6 +480,10 @@ export function PreviewPanel() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div aria-hidden="true" className="fixed -left-[9999px] top-0 pointer-events-none opacity-0">
+        <div ref={exportRef}>{wallpaperScene}</div>
       </div>
 
       {exportError ? (
