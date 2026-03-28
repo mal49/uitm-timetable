@@ -1,5 +1,9 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
+import {
+  SHAH_ALAM_SPECIAL_CAMPUS_CODES,
+  SHAH_ALAM_SPECIAL_COURSE_PREFIXES,
+} from "./constants";
 import type {
   Campus,
   Faculty,
@@ -372,28 +376,36 @@ export async function fetchSubjectTimetable(
 // their course falls under, so we try all three before giving up.
 const SHAH_ALAM_COURSE_TYPES = ["HEP", "APB", "CITU"] as const;
 
+export async function searchSubjectsWithFallback(
+  info: MainPageInfo,
+  req: SearchRequest
+): Promise<{ results: SearchResult[]; effectiveCampus: string }> {
+  const searchOrder = getShahAlamSearchOrder(req.campus, req.course);
+  let results: SearchResult[] = [];
+  let effectiveCampus = searchOrder[0] ?? req.campus;
+
+  for (const campus of searchOrder) {
+    if (campus !== req.campus) {
+      console.log("[scraper] retrying with campus:", campus);
+    }
+
+    results = await searchSubjects(info, { ...req, campus });
+    effectiveCampus = campus;
+
+    if (results.length > 0) {
+      break;
+    }
+  }
+
+  return { results, effectiveCampus };
+}
+
 export async function searchTimetable(req: SearchRequest): Promise<SearchResponse> {
   // Step 3: get session info (single session reused across retries)
   const info = await getMainPageInfo();
 
   // Step 4: search subjects — with automatic fallback across Shah Alam types
-  let results = await searchSubjects(info, req);
-  let effectiveCampus = req.campus;
-
-  if (
-    results.length === 0 &&
-    (SHAH_ALAM_COURSE_TYPES as readonly string[]).includes(req.campus)
-  ) {
-    for (const altCampus of SHAH_ALAM_COURSE_TYPES) {
-      if (altCampus === req.campus) continue;
-      console.log("[scraper] retrying with campus:", altCampus);
-      results = await searchSubjects(info, { ...req, campus: altCampus });
-      if (results.length > 0) {
-        effectiveCampus = altCampus;
-        break;
-      }
-    }
-  }
+  const { results, effectiveCampus } = await searchSubjectsWithFallback(info, req);
 
   if (results.length === 0) {
     return {
@@ -455,6 +467,32 @@ function splitAfterFirstDash(text: string): string {
   const idx = text.indexOf("-");
   if (idx === -1) return text;
   return text.slice(idx + 1).trim();
+}
+
+function getShahAlamSearchOrder(campus: string, course: string): string[] {
+  if (!SHAH_ALAM_SPECIAL_CAMPUS_CODES.has(campus)) {
+    return [campus];
+  }
+
+  const normalizedCourse = course.trim().toUpperCase();
+  const inferredCampus = inferShahAlamCampusFromCourse(normalizedCourse);
+  const order = [
+    inferredCampus,
+    campus,
+    ...SHAH_ALAM_COURSE_TYPES,
+  ].filter((value): value is string => Boolean(value));
+
+  return [...new Set(order)];
+}
+
+function inferShahAlamCampusFromCourse(course: string): string | null {
+  for (const [campus, prefixes] of Object.entries(SHAH_ALAM_SPECIAL_COURSE_PREFIXES)) {
+    if (prefixes.some((prefix) => course.startsWith(prefix))) {
+      return campus;
+    }
+  }
+
+  return null;
 }
 
 function findColIndex(headers: string[], keywords: string[]): number {

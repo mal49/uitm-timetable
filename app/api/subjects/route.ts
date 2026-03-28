@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMainPageInfo, searchSubjects } from "@/lib/scraper";
+import { getMainPageInfo, searchSubjectsWithFallback } from "@/lib/scraper";
 import { FACULTY_REQUIRED_CAMPUS_CODES } from "@/lib/constants";
 import type { SearchRequest } from "@/lib/types";
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const info = await getMainPageInfo();
-    const results = await searchSubjects(info, {
+    const { results } = await searchSubjectsWithFallback(info, {
       campus: campus.trim(),
       faculty: (faculty ?? "").trim(),
       course: course.trim(),
