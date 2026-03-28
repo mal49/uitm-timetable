@@ -186,7 +186,7 @@ export function WallpaperTable({
 }: WallpaperTableProps) {
   const { settings } = useWallpaper();
   const theme = getThemePreset(settings.themeId);
-  const densityConfig = {
+  const baseDensityConfig = {
     "ultra-compact": {
       outerPaddingX: "8px",
       outerPaddingTop: "4px",
@@ -276,6 +276,55 @@ export function WallpaperTable({
       timeNormal: "6.2px",
     },
   }[settings.density];
+  const isPortrait = settings.orientation === "portrait";
+  const densityConfig = {
+    ...baseDensityConfig,
+    boardWidth: isPortrait ? "88%" : baseDensityConfig.boardWidth,
+    boardHeight: isPortrait ? "84%" : baseDensityConfig.boardHeight,
+    titleHeightPx: isPortrait
+      ? Math.max(30, baseDensityConfig.titleHeightPx - 2)
+      : baseDensityConfig.titleHeightPx,
+    titleSize: isPortrait
+      ? `${Math.max(11.5, Number.parseFloat(baseDensityConfig.titleSize) - 1)}px`
+      : baseDensityConfig.titleSize,
+    headerRowHeight: isPortrait
+      ? `${Math.max(20, Number.parseFloat(baseDensityConfig.headerRowHeight) - 2)}px`
+      : baseDensityConfig.headerRowHeight,
+    dayLabelSize: isPortrait
+      ? `${Math.max(8.5, Number.parseFloat(baseDensityConfig.dayLabelSize) - 1)}px`
+      : baseDensityConfig.dayLabelSize,
+    timeColumnWidth:
+      settings.showTimeIndicators && isPortrait
+        ? `${Math.max(22, Number.parseFloat(baseDensityConfig.timeColumnWidth) - 4)}px`
+        : baseDensityConfig.timeColumnWidth,
+    minCardHeight: isPortrait
+      ? `${Math.max(34, Number.parseFloat(baseDensityConfig.minCardHeight) - 4)}px`
+      : baseDensityConfig.minCardHeight,
+    cardPaddingX: isPortrait
+      ? `${Math.max(4, Number.parseFloat(baseDensityConfig.cardPaddingX) - 1)}px`
+      : baseDensityConfig.cardPaddingX,
+    cardPaddingY: isPortrait
+      ? `${Math.max(4, Number.parseFloat(baseDensityConfig.cardPaddingY) - 1)}px`
+      : baseDensityConfig.cardPaddingY,
+    codeTight: isPortrait
+      ? `${Math.max(5.8, Number.parseFloat(baseDensityConfig.codeTight) - 0.8)}px`
+      : baseDensityConfig.codeTight,
+    codeNormal: isPortrait
+      ? `${Math.max(7.2, Number.parseFloat(baseDensityConfig.codeNormal) - 0.8)}px`
+      : baseDensityConfig.codeNormal,
+    venueTight: isPortrait
+      ? `${Math.max(4.8, Number.parseFloat(baseDensityConfig.venueTight) - 0.4)}px`
+      : baseDensityConfig.venueTight,
+    venueNormal: isPortrait
+      ? `${Math.max(5.6, Number.parseFloat(baseDensityConfig.venueNormal) - 0.4)}px`
+      : baseDensityConfig.venueNormal,
+    timeTight: isPortrait
+      ? `${Math.max(4.6, Number.parseFloat(baseDensityConfig.timeTight) - 0.3)}px`
+      : baseDensityConfig.timeTight,
+    timeNormal: isPortrait
+      ? `${Math.max(5.2, Number.parseFloat(baseDensityConfig.timeNormal) - 0.3)}px`
+      : baseDensityConfig.timeNormal,
+  };
 
   const scheduleMetrics = useMemo(() => {
     const validEntries = entries.filter((entry) => {
@@ -519,6 +568,16 @@ export function WallpaperTable({
                       const codeTextSize = isTight
                         ? densityConfig.codeTight
                         : densityConfig.codeNormal;
+                      const codeLength = block.courseCode.length;
+                      const codeScale =
+                        block.columnCount > 1 || codeLength >= 7
+                          ? 0.88
+                          : codeLength >= 6
+                            ? 0.94
+                            : 1;
+                      const resolvedCodeSize = `${(
+                        Number.parseFloat(codeTextSize) * codeScale
+                      ).toFixed(2)}px`;
                       const venueTextSize = isTight
                         ? densityConfig.venueTight
                         : densityConfig.venueNormal;
@@ -550,11 +609,12 @@ export function WallpaperTable({
                           }}>
                           {settings.showCourseCode ? (
                             <div
-                              className="max-w-full whitespace-nowrap overflow-hidden font-black tracking-[-0.04em]"
+                              className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-black tracking-[-0.04em]"
                               style={{
                                 color: subjectText,
-                                fontSize: codeTextSize,
+                                fontSize: resolvedCodeSize,
                                 lineHeight: 1,
+                                width: "100%",
                               }}>
                               {block.courseCode}
                             </div>

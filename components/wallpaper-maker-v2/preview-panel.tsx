@@ -63,6 +63,10 @@ const LANDSCAPE_EXPORT_SIZE = {
   height: 390,
 };
 
+const PORTRAIT_TOP_PADDING = "188px";
+const PORTRAIT_TOP_PADDING_WITH_WIDGET = "222px";
+const PORTRAIT_BOTTOM_PADDING = "92px";
+
 export function PreviewPanel() {
   const { settings, updateSettings, entries, colorOverrides } = useWallpaper();
   const theme = getThemePreset(settings.themeId);
@@ -169,8 +173,10 @@ export function PreviewPanel() {
           className="h-full w-full overflow-hidden"
           style={{
             boxSizing: "border-box",
-            paddingTop: settings.showWidgetPosition ? "236px" : "172px",
-            paddingBottom: "74px",
+            paddingTop: settings.showWidgetPosition
+              ? PORTRAIT_TOP_PADDING_WITH_WIDGET
+              : PORTRAIT_TOP_PADDING,
+            paddingBottom: PORTRAIT_BOTTOM_PADDING,
           }}
         >
           {renderLayout(settings.layoutStyle)}
@@ -290,8 +296,10 @@ export function PreviewPanel() {
                         className="h-full w-full overflow-hidden"
                         style={{
                           boxSizing: "border-box",
-                          paddingTop: settings.showWidgetPosition ? "236px" : "172px",
-                          paddingBottom: "74px",
+                          paddingTop: settings.showWidgetPosition
+                            ? PORTRAIT_TOP_PADDING_WITH_WIDGET
+                            : PORTRAIT_TOP_PADDING,
+                          paddingBottom: PORTRAIT_BOTTOM_PADDING,
                         }}
                       >
                         {renderLayout(settings.layoutStyle)}
@@ -362,8 +370,10 @@ export function PreviewPanel() {
                       className="h-full w-full overflow-hidden"
                       style={{
                         boxSizing: "border-box",
-                        paddingTop: settings.showWidgetPosition ? "236px" : "172px",
-                        paddingBottom: "74px",
+                        paddingTop: settings.showWidgetPosition
+                          ? PORTRAIT_TOP_PADDING_WITH_WIDGET
+                          : PORTRAIT_TOP_PADDING,
+                        paddingBottom: PORTRAIT_BOTTOM_PADDING,
                       }}
                     >
                       {renderLayout(settings.layoutStyle)}
