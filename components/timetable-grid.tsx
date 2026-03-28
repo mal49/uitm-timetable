@@ -2,13 +2,13 @@
 
 import { useRef, useEffect, useState } from "react";
 import { MapPin, User, Clock, ChevronDown, Filter, Search, X } from "lucide-react";
-import { getSubjectColor, WEEKDAYS } from "@/lib/constants";
+import { DAYS_OF_WEEK, getSubjectColor } from "@/lib/constants";
 import type { TimetableEntry } from "@/lib/types";
 
 interface TimetableGridProps {
   entries: TimetableEntry[];
   course: string;
-  /** Five weekday columns regardless of viewport (e.g. mobile JPG export). */
+  /** Fixed desktop-style columns regardless of viewport (e.g. mobile JPG export). */
   layoutDesktop?: boolean;
   colorOverrides?: Record<string, string>;
   variant?: "desktop" | "wallpaper";
@@ -46,14 +46,14 @@ export function TimetableGrid({
   showIcons = true,
 }: TimetableGridProps) {
   const isWallpaper = variant === "wallpaper";
-  const activeDays = WEEKDAYS.filter((day) => entries.some((e) => e.day === day));
-  const days = activeDays.length > 0 ? activeDays : WEEKDAYS;
+  const activeDays = DAYS_OF_WEEK.filter((day) => entries.some((e) => e.day === day));
+  const days = activeDays.length > 0 ? activeDays : DAYS_OF_WEEK;
 
-  const byDay = new Map<(typeof WEEKDAYS)[number], TimetableEntry[]>();
+  const byDay = new Map<(typeof DAYS_OF_WEEK)[number], TimetableEntry[]>();
   for (const day of days) byDay.set(day, []);
   for (const e of entries) {
-    if (!days.includes(e.day as (typeof WEEKDAYS)[number])) continue;
-    byDay.get(e.day as (typeof WEEKDAYS)[number])?.push(e);
+    if (!days.includes(e.day as (typeof DAYS_OF_WEEK)[number])) continue;
+    byDay.get(e.day as (typeof DAYS_OF_WEEK)[number])?.push(e);
   }
   for (const day of days) {
     byDay.set(
@@ -88,14 +88,16 @@ export function TimetableGrid({
           isWallpaper ? "gap-2" : layoutDesktop ? "gap-4" : "gap-3 sm:gap-4"
         } ${
           layoutDesktop
-            ? "grid-cols-5"
+            ? ""
             : // On desktop, don't force 5 columns when only 1–2 days exist.
               // Keep the original desktop classes; mobile stacking is applied via CSS override below.
               "grid-cols-1 md:w-fit md:mx-auto timetable-responsive-grid"
         }`}
         style={
           layoutDesktop
-            ? undefined
+            ? {
+                gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
+              }
             : {
                 // Fixed-ish column width keeps 1–2 day previews from stretching across the whole row.
                 gridTemplateColumns: `repeat(${days.length}, minmax(0, 18rem))`,

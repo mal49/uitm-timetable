@@ -78,7 +78,7 @@ export function PreviewPanel() {
   const lockTime = formatLockscreenTime(now);
 
   // Render the selected layout
-  const renderLayout = (layoutStyle: LayoutStyle) => {
+  const renderLayout = (layoutStyle: LayoutStyle, renderMode: "preview" | "export") => {
     const props = { entries, colorOverrides };
     
     switch (layoutStyle) {
@@ -93,7 +93,7 @@ export function PreviewPanel() {
       case "agenda":
         return <AgendaStyle {...props} />;
       case "wallpaper-table":
-        return <WallpaperTable {...props} />;
+        return <WallpaperTable {...props} renderMode={renderMode} />;
       default:
         return assertNever(layoutStyle);
     }
@@ -179,7 +179,7 @@ export function PreviewPanel() {
             paddingBottom: PORTRAIT_BOTTOM_PADDING,
           }}
         >
-          {renderLayout(settings.layoutStyle)}
+          {renderLayout(settings.layoutStyle, "export")}
         </div>
       </div>
     ) : (
@@ -203,7 +203,7 @@ export function PreviewPanel() {
             paddingRight: landscapeRightPadding,
           }}
         >
-          {renderLayout(settings.layoutStyle)}
+          {renderLayout(settings.layoutStyle, "export")}
         </div>
       </div>
     );
@@ -302,7 +302,7 @@ export function PreviewPanel() {
                           paddingBottom: PORTRAIT_BOTTOM_PADDING,
                         }}
                       >
-                        {renderLayout(settings.layoutStyle)}
+                        {renderLayout(settings.layoutStyle, "preview")}
                       </div>
                     </div>
 
@@ -366,18 +366,6 @@ export function PreviewPanel() {
                       <div className="h-1.5 w-28 rounded-full bg-white/85" />
                     </div>
 
-                    <div
-                      className="h-full w-full overflow-hidden"
-                      style={{
-                        boxSizing: "border-box",
-                        paddingTop: settings.showWidgetPosition
-                          ? PORTRAIT_TOP_PADDING_WITH_WIDGET
-                          : PORTRAIT_TOP_PADDING,
-                        paddingBottom: PORTRAIT_BOTTOM_PADDING,
-                      }}
-                    >
-                      {renderLayout(settings.layoutStyle)}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -432,7 +420,7 @@ export function PreviewPanel() {
                           paddingRight: landscapeRightPadding,
                         }}
                       >
-                        {renderLayout(settings.layoutStyle)}
+                        {renderLayout(settings.layoutStyle, "preview")}
                       </div>
                     </div>
 

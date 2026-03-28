@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     locale: "en_MY",
     images: [
       {
-        url: "/opengraph-image",
+        url: "/social-preview.jpg",
         width: 1200,
         height: 630,
         alt: "UiTM Schedule preview card",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     title: "UiTM Schedule",
     description:
       "Search UiTM class schedules, pick your groups, and turn your final timetable into a custom wallpaper.",
-    images: ["/twitter-image"],
+    images: ["/social-preview.jpg"],
   },
 };
 

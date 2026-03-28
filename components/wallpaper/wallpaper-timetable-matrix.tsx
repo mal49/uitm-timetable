@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 
-import { getSubjectColor, WEEKDAYS } from "@/lib/constants";
 import type { TimetableEntry } from "@/lib/types";
 
 type MatrixGranularity = 30 | 60;
@@ -26,19 +25,6 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-function pad2(n: number) {
-  return n < 10 ? `0${n}` : String(n);
-}
-
-function minutesToLabel(mins: number) {
-  const h24 = Math.floor(mins / 60);
-  const m = mins % 60;
-  const isPm = h24 >= 12;
-  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  const suffix = isPm ? "PM" : "AM";
-  return `${h12}:${pad2(m)} ${suffix}`;
-}
-
 function hexToRgb(hex: string) {
   const normalized = hex.replace("#", "");
   if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
@@ -50,16 +36,17 @@ function hexToRgb(hex: string) {
   };
 }
 
-const DAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const;
-const DAY_NAMES_FULL = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+const DAY_ORDER = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 function normalizeDay(d: string): (typeof DAY_ORDER)[number] | null {
   const raw = d.trim().toLowerCase();
+  if (raw.startsWith("sun")) return "Sun";
   if (raw.startsWith("mon")) return "Mon";
   if (raw.startsWith("tue")) return "Tue";
   if (raw.startsWith("wed")) return "Wed";
   if (raw.startsWith("thu")) return "Thu";
   if (raw.startsWith("fri")) return "Fri";
+  if (raw.startsWith("sat")) return "Sat";
   return null;
 }
 
@@ -68,9 +55,7 @@ export function WallpaperTimetableMatrix({
   course,
   colorOverrides,
   showVenue = true,
-  showLecturer = false,
   showTime = true,
-  granularityMinutes = 60,
 }: WallpaperTimetableMatrixProps) {
   const normalized = useMemo(() => {
     return entries
@@ -106,19 +91,6 @@ export function WallpaperTimetableMatrix({
       startMin: clamp(startHour * 60, 7 * 60, 12 * 60),
       endMin: clamp(endHour * 60, 14 * 60, 20 * 60),
     };
-  }, [normalized]);
-
-  const columnEntries = useMemo(() => {
-    const byDay = new Map<(typeof DAY_ORDER)[number], typeof normalized>();
-    for (const d of DAY_ORDER) byDay.set(d, []);
-    for (const e of normalized) byDay.get(e.day)?.push(e);
-    for (const d of DAY_ORDER) {
-      byDay.set(
-        d,
-        (byDay.get(d) ?? []).slice().sort((a, b) => a.startMin - b.startMin)
-      );
-    }
-    return byDay;
   }, [normalized]);
 
   const dayCols = DAY_ORDER;
@@ -194,11 +166,13 @@ export function WallpaperTimetableMatrix({
               letterSpacing: "0.02em",
             }}
           >
-            {day === "Mon" ? "Monday" : 
+            {day === "Sun" ? "Sunday" :
+             day === "Mon" ? "Monday" : 
              day === "Tue" ? "Tuesday" :
              day === "Wed" ? "Wednesday" :
              day === "Thu" ? "Thursday" :
-             day === "Fri" ? "Friday" : day}
+             day === "Fri" ? "Friday" :
+             day === "Sat" ? "Saturday" : day}
           </div>
         ))}
       </div>
@@ -346,4 +320,3 @@ export function WallpaperTimetableMatrix({
     </div>
   );
 }
-

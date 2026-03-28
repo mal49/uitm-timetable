@@ -8,26 +8,34 @@ import { getThemePreset } from "../themes/theme-presets";
 export interface WallpaperTableProps {
   entries: TimetableEntry[];
   colorOverrides: Record<string, string>;
+  renderMode?: "preview" | "export";
 }
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"] as const;
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const MIN_VISIBLE_HOUR = 7;
 const MAX_VISIBLE_HOUR = 22;
 const MIN_HOUR_SPAN = 8;
+const POSITION_SLOT_MINUTES = 30;
 
 function getDayIndex(day: string): number {
   const value = day.trim().toLowerCase();
-  if (value.startsWith("mon")) return 0;
-  if (value.startsWith("tue")) return 1;
-  if (value.startsWith("wed")) return 2;
-  if (value.startsWith("thu")) return 3;
-  if (value.startsWith("fri")) return 4;
+  if (value.startsWith("sun")) return 0;
+  if (value.startsWith("mon")) return 1;
+  if (value.startsWith("tue")) return 2;
+  if (value.startsWith("wed")) return 3;
+  if (value.startsWith("thu")) return 4;
+  if (value.startsWith("fri")) return 5;
+  if (value.startsWith("sat")) return 6;
   return -1;
 }
 
 function timeToMinutes(time: string): number {
   const [hour, minute] = time.split(":").map(Number);
   return (hour ?? 0) * 60 + (minute ?? 0);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 
 function formatMinimalHourLabel(hour24: number): string {
@@ -97,8 +105,8 @@ function formatVenueLabel(venue: string): string {
 type TableBlock = {
   id: string;
   dayIndex: number;
-  top: number;
-  height: number;
+  startSlot: number;
+  slotSpan: number;
   durationMinutes: number;
   courseCode: string;
   subjectName: string;
@@ -116,7 +124,7 @@ type TableBlock = {
 function assignOverlapColumns(blocks: TableBlock[]): TableBlock[] {
   const resolvedBlocks: TableBlock[] = [];
 
-  for (const dayIndex of [0, 1, 2, 3, 4]) {
+  for (const dayIndex of DAYS.map((_, index) => index)) {
     const dayBlocks = blocks
       .filter((block) => block.dayIndex === dayIndex)
       .sort(
@@ -183,9 +191,16 @@ function assignOverlapColumns(blocks: TableBlock[]): TableBlock[] {
 export function WallpaperTable({
   entries,
   colorOverrides,
+  renderMode = "preview",
 }: WallpaperTableProps) {
   const { settings } = useWallpaper();
   const theme = getThemePreset(settings.themeId);
+  const activeDays = useMemo(() => {
+    const used = DAYS.filter((day) =>
+      entries.some((entry) => getDayIndex(entry.day || "") === DAYS.indexOf(day)),
+    );
+    return used.length > 0 ? used : DAYS;
+  }, [entries]);
   const baseDensityConfig = {
     "ultra-compact": {
       outerPaddingX: "8px",
@@ -359,6 +374,7 @@ export function WallpaperTable({
     const startMinutes = startHour * 60;
     const endMinutes = boundedEndHour * 60;
     const totalMinutes = endMinutes - startMinutes;
+    const totalSlots = totalMinutes / POSITION_SLOT_MINUTES;
 
     const tableBlocks = assignOverlapColumns(
       entries
@@ -373,8 +389,6 @@ export function WallpaperTable({
 
           if (clippedEnd <= clippedStart) return null;
 
-          const top = ((clippedStart - startMinutes) / totalMinutes) * 100;
-          const height = ((clippedEnd - clippedStart) / totalMinutes) * 100;
           const colorKey = entry.subjectKey || entry.course || "DEFAULT";
           const borderColor = colorOverrides[colorKey] || "#1f2937";
           const courseCode =
@@ -384,8 +398,10 @@ export function WallpaperTable({
           return {
             id: `${entry.day}-${entry.start}-${entry.end}-${courseCode}`,
             dayIndex,
-            top,
-            height,
+            startSlot:
+              (clippedStart - startMinutes) / POSITION_SLOT_MINUTES,
+            slotSpan:
+              (clippedEnd - clippedStart) / POSITION_SLOT_MINUTES,
             durationMinutes: clippedEnd - clippedStart,
             courseCode: normalizedCourseCode,
             subjectName: entry.subjectName || "",
@@ -406,6 +422,7 @@ export function WallpaperTable({
     return {
       startHour,
       totalHours,
+      totalSlots,
       tableBlocks,
     };
   }, [entries, colorOverrides]);
@@ -413,6 +430,7 @@ export function WallpaperTable({
   const hourLabels = Array.from({ length: scheduleMetrics.totalHours }).map(
     (_, index) => scheduleMetrics.startHour + index,
   );
+  const dayCount = activeDays.length;
   const timeColumnWidth = densityConfig.timeColumnWidth;
   const tableBackground =
     theme.overlayBackground ?? "rgba(255, 255, 255, 0.95)";
@@ -465,18 +483,18 @@ export function WallpaperTable({
           className="grid text-[10px]"
           style={{
             height: `calc(100% - ${densityConfig.titleHeightPx}px)`,
-            gridTemplateRows: settings.showDayLabels
-              ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
-              : "minmax(0, 1fr)",
+                gridTemplateRows: settings.showDayLabels
+                  ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
+                  : "minmax(0, 1fr)",
           }}>
           {settings.showDayLabels ? (
             <div
               className="grid"
               style={{
-                gridTemplateColumns: `${timeColumnWidth} repeat(5, minmax(0, 1fr))`,
+                gridTemplateColumns: `${timeColumnWidth} repeat(${dayCount}, minmax(0, 1fr))`,
               }}>
               <div style={{ borderRight: `1px solid ${tableGrid}` }} />
-              {DAYS.map((day) => (
+              {activeDays.map((day) => (
                 <div
                   key={day}
                   className="flex items-center justify-center px-0.5 font-semibold pt-0.5"
@@ -484,7 +502,7 @@ export function WallpaperTable({
                     fontSize: densityConfig.dayLabelSize,
                     borderBottom: `1px solid ${tableGrid}`,
                     borderRight:
-                      day === DAYS[DAYS.length - 1]
+                      day === activeDays[activeDays.length - 1]
                         ? "none"
                         : `1px solid ${tableGrid}`,
                     color: tableHeaderText,
@@ -498,7 +516,7 @@ export function WallpaperTable({
           <div
             className="grid min-h-0"
             style={{
-              gridTemplateColumns: `${timeColumnWidth} repeat(5, minmax(0, 1fr))`,
+              gridTemplateColumns: `${timeColumnWidth} repeat(${dayCount}, minmax(0, 1fr))`,
             }}>
             {settings.showTimeIndicators ? (
               <div
@@ -512,7 +530,7 @@ export function WallpaperTable({
                     <div
                       key={hour}
                       className="flex items-center justify-center text-center px-0.5"
-                      style={{ borderBottom: `1px solid ${tableGrid}` }}>
+                      style={{ boxShadow: `inset 0 -1px 0 ${tableGrid}` }}>
                       <span
                         className="font-semibold leading-none tracking-[-0.02em]"
                         style={{
@@ -529,144 +547,281 @@ export function WallpaperTable({
               <div style={{ borderRight: `1px solid ${tableGrid}` }} />
             )}
 
-            {DAYS.map((day, dayIndex) => (
-              <div
-                key={day}
-                className="relative min-h-0 overflow-hidden"
-                style={{
-                  borderRight:
-                    day === DAYS[DAYS.length - 1]
-                      ? "none"
-                      : `1px solid ${tableGrid}`,
-                  contain: "paint",
-                }}>
+            {activeDays.map((day) => {
+              const dayIndex = DAYS.indexOf(day);
+              return (
                 <div
-                  className="absolute inset-0 grid"
+                  key={day}
+                  className="relative min-h-0 overflow-hidden"
                   style={{
-                    gridTemplateRows: `repeat(${scheduleMetrics.totalHours}, minmax(0, 1fr))`,
+                    borderRight:
+                      day === activeDays[activeDays.length - 1]
+                        ? "none"
+                        : `1px solid ${tableGrid}`,
+                    contain: "paint",
                   }}>
-                  {hourLabels.map((hour) => (
-                    <div
-                      key={`${day}-${hour}`}
-                      style={{ borderBottom: `1px solid ${tableGrid}` }}
-                    />
-                  ))}
+                  <div
+                    className="absolute inset-0 grid"
+                    style={{
+                      gridTemplateRows: `repeat(${scheduleMetrics.totalHours}, minmax(0, 1fr))`,
+                    }}>
+                    {hourLabels.map((hour) => (
+                      <div
+                        key={`${day}-${hour}`}
+                        style={{ boxShadow: `inset 0 -1px 0 ${tableGrid}` }}
+                      />
+                    ))}
+                  </div>
+
+                  {scheduleMetrics.tableBlocks
+                    .filter((block) => block.dayIndex === dayIndex)
+                    .map((block) =>
+                      (() => {
+                        const isCompact = block.durationMinutes <= 75;
+                        const isTight = isCompact || block.columnCount > 1;
+                        const venueLabel = formatVenueLabel(block.venue);
+                        const timeLabel =
+                          settings.showTime && !isTight
+                            ? settings.showTimeIndicators
+                              ? block.start
+                              : `${block.start} - ${block.end}`
+                            : "";
+                        const baseCodeTextSize = Number.parseFloat(
+                          isTight ? densityConfig.codeTight : densityConfig.codeNormal,
+                        );
+                        const codeLength = block.courseCode.length;
+                        const blockWidthScore = Math.sqrt(
+                          7 / Math.max(1, dayCount * block.columnCount),
+                        );
+                        const blockHeightScore = clamp(
+                          0.82 + block.slotSpan * 0.18,
+                          0.92,
+                          1.44,
+                        );
+                        const readableBoost = clamp(
+                          Math.sqrt(blockWidthScore * blockHeightScore),
+                          1,
+                          1.9,
+                        );
+                        const tightFitPenalty =
+                          dayCount >= 5 || block.columnCount > 1 ? 0.8 : 1;
+                        const isOneHourBlock = block.slotSpan <= 2;
+                        const prioritizeCodeOnly =
+                          renderMode === "preview"
+                            ? isOneHourBlock ||
+                              block.columnCount > 1 ||
+                              dayCount >= 5 ||
+                              block.slotSpan < 1.85 ||
+                              codeLength >= 8
+                            : block.columnCount > 1 ||
+                              dayCount >= 6 ||
+                              block.slotSpan < 1.6 ||
+                              codeLength >= 11;
+                        const codeScale =
+                          codeLength >= 10
+                            ? 0.82
+                            : codeLength >= 8
+                              ? 0.9
+                              : codeLength >= 6
+                                ? 0.97
+                                : 1;
+                        const codeFitScaleX = clamp(
+                          codeLength >= 12
+                            ? 0.62
+                            : codeLength >= 10
+                              ? 0.7
+                              : codeLength >= 8
+                                ? 0.8
+                                : codeLength >= 7
+                                  ? 0.88
+                                  : 1,
+                          0.62,
+                          1,
+                        );
+                        const resolvedCodeSize = `${(
+                          baseCodeTextSize *
+                          codeScale *
+                          tightFitPenalty *
+                          clamp(
+                            readableBoost * (prioritizeCodeOnly ? 1.18 : 1),
+                            1,
+                            2.1,
+                          )
+                        ).toFixed(2)}px`;
+                        const showVenueDetails =
+                          renderMode === "export" &&
+                          settings.showVenue &&
+                          !!venueLabel &&
+                          !isOneHourBlock &&
+                          !prioritizeCodeOnly &&
+                          block.slotSpan >= 2 &&
+                          dayCount <= 5 &&
+                          block.columnCount === 1;
+                        const showOneHourVenueStacked =
+                          renderMode === "export" &&
+                          settings.showVenue &&
+                          !!venueLabel &&
+                          isOneHourBlock &&
+                          block.columnCount === 1;
+                        const showTimeDetails =
+                          renderMode === "export" &&
+                          !!timeLabel &&
+                          !isOneHourBlock &&
+                          !prioritizeCodeOnly &&
+                          block.columnCount === 1 &&
+                          block.slotSpan >= 2.6 &&
+                          dayCount <= 5;
+                        const venueTextSize = `${(
+                          Number.parseFloat(
+                            isTight ? densityConfig.venueTight : densityConfig.venueNormal,
+                          ) *
+                          clamp(readableBoost * 0.86, 0.96, 1.45)
+                        ).toFixed(2)}px`;
+                        const inlineVenueTextSize = `${(
+                          Number.parseFloat(densityConfig.venueTight) *
+                          clamp(readableBoost * 0.84, 0.9, 1.2)
+                        ).toFixed(2)}px`;
+                        const timeTextSize = `${(
+                          Number.parseFloat(
+                            isTight ? densityConfig.timeTight : densityConfig.timeNormal,
+                          ) *
+                          clamp(readableBoost * 0.9, 0.98, 1.5)
+                        ).toFixed(2)}px`;
+
+                        const widthPercent = 100 / block.columnCount;
+                        const inset = 2;
+                        const verticalInset = 2;
+                        const compactPaddingY = isCompact
+                          ? `${Math.max(
+                              2,
+                              Number.parseFloat(densityConfig.cardPaddingY) - 1,
+                            )}px`
+                          : densityConfig.cardPaddingY;
+                        const compactPaddingX = prioritizeCodeOnly
+                          ? `${Math.max(
+                              2,
+                              Number.parseFloat(densityConfig.cardPaddingX) - 2,
+                            )}px`
+                          : densityConfig.cardPaddingX;
+
+                        return (
+                          <div
+                            key={block.id}
+                            className="absolute flex flex-col items-start justify-center overflow-hidden rounded-[10px] border-2 text-left"
+                            style={{
+                              top: `calc((100% / ${scheduleMetrics.totalSlots}) * ${block.startSlot} + ${verticalInset}px)`,
+                              left: `calc(${block.columnIndex * widthPercent}% + ${inset}px)`,
+                              width: `calc(${widthPercent}% - ${inset * 2}px)`,
+                              height: `calc((100% / ${scheduleMetrics.totalSlots}) * ${block.slotSpan} - ${verticalInset * 2}px)`,
+                              paddingLeft: compactPaddingX,
+                              paddingRight: compactPaddingX,
+                              paddingTop: compactPaddingY,
+                              paddingBottom: compactPaddingY,
+                              borderColor: block.borderColor,
+                              backgroundColor: isDarkOverlay
+                                ? "rgba(255, 255, 255, 0.08)"
+                                : toSoftTint(block.borderColor, 0.24),
+                              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.10)",
+                            }}>
+                            {settings.showCourseCode ? (
+                              showOneHourVenueStacked ? (
+                                <div className="max-w-full overflow-hidden">
+                                  <div
+                                    className="max-w-full overflow-hidden whitespace-nowrap font-black tracking-[-0.04em]"
+                                    style={{
+                                      color: subjectText,
+                                      fontSize: resolvedCodeSize,
+                                      lineHeight: 1,
+                                      width: "100%",
+                                      transform: `scaleX(${codeFitScaleX})`,
+                                      transformOrigin: "left center",
+                                    }}>
+                                    {block.courseCode}
+                                  </div>
+                                  <div
+                                    className="mt-0.5 max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
+                                    style={{
+                                      color: isDarkOverlay
+                                        ? "rgba(248, 250, 252, 0.9)"
+                                        : "rgba(15, 23, 42, 0.76)",
+                                      fontSize: inlineVenueTextSize,
+                                      lineHeight: 1,
+                                    }}>
+                                    {venueLabel}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div
+                                  className="max-w-full overflow-hidden whitespace-nowrap font-black tracking-[-0.04em]"
+                                  style={{
+                                    color: subjectText,
+                                    fontSize: resolvedCodeSize,
+                                    lineHeight: 1,
+                                    width: "100%",
+                                    transform: `scaleX(${codeFitScaleX})`,
+                                    transformOrigin: "left center",
+                                  }}>
+                                  {block.courseCode}
+                                </div>
+                              )
+                            ) : null}
+                            {showVenueDetails ? (
+                              <div
+                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-semibold"
+                                style={{
+                                  color: isDarkOverlay
+                                    ? "rgba(248, 250, 252, 0.96)"
+                                    : "rgba(15, 23, 42, 0.86)",
+                                  fontSize: venueTextSize,
+                                  lineHeight: 1.12,
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: "vertical",
+                                }}>
+                                {venueLabel}
+                              </div>
+                            ) : null}
+                            {!isCompact &&
+                            settings.showCourseName &&
+                            block.subjectName ? (
+                              <div
+                                className="mt-0.5 max-w-full whitespace-normal wrap-break-word text-[6.3px] leading-[1.1] font-medium"
+                                style={{ color: tableSubtleText }}>
+                                {block.subjectName}
+                              </div>
+                            ) : null}
+                            {!isCompact &&
+                            settings.showLecturer &&
+                            block.lecturer ? (
+                              <div
+                                className="max-w-full whitespace-normal wrap-break-word text-[5.75px] leading-[1.1] mt-0.5 font-medium"
+                                style={{ color: tableSubtleText }}>
+                                {block.lecturer}
+                              </div>
+                            ) : null}
+                            {showTimeDetails ? (
+                              <div
+                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-medium"
+                                style={{
+                                  color: isDarkOverlay
+                                    ? "rgba(248, 250, 252, 0.92)"
+                                    : "rgba(15, 23, 42, 0.82)",
+                                  fontSize: timeTextSize,
+                                  lineHeight: 1.12,
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: 1,
+                                  WebkitBoxOrient: "vertical",
+                                }}>
+                                {timeLabel}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })(),
+                    )}
                 </div>
-
-                {scheduleMetrics.tableBlocks
-                  .filter((block) => block.dayIndex === dayIndex)
-                  .map((block) =>
-                    (() => {
-                      const isCompact = block.durationMinutes <= 75;
-                      const isTight = isCompact || block.columnCount > 1;
-                      const venueLabel = formatVenueLabel(block.venue);
-                      const timeLabel =
-                        settings.showTime && !isTight
-                          ? settings.showTimeIndicators
-                            ? block.start
-                            : `${block.start} - ${block.end}`
-                          : "";
-                      const codeTextSize = isTight
-                        ? densityConfig.codeTight
-                        : densityConfig.codeNormal;
-                      const codeLength = block.courseCode.length;
-                      const codeScale =
-                        block.columnCount > 1 || codeLength >= 7
-                          ? 0.88
-                          : codeLength >= 6
-                            ? 0.94
-                            : 1;
-                      const resolvedCodeSize = `${(
-                        Number.parseFloat(codeTextSize) * codeScale
-                      ).toFixed(2)}px`;
-                      const venueTextSize = isTight
-                        ? densityConfig.venueTight
-                        : densityConfig.venueNormal;
-                      const timeTextSize = isTight
-                        ? densityConfig.timeTight
-                        : densityConfig.timeNormal;
-
-                      const widthPercent = 100 / block.columnCount;
-                      const inset = 2;
-
-                      return (
-                        <div
-                          key={block.id}
-                          className="absolute flex flex-col items-start justify-center overflow-hidden rounded-[10px] border-2 text-left"
-                          style={{
-                            top: `${block.top}%`,
-                            left: `calc(${block.columnIndex * widthPercent}% + ${inset}px)`,
-                            width: `calc(${widthPercent}% - ${inset * 2}px)`,
-                            minHeight: densityConfig.minCardHeight,
-                            height: `${block.height}%`,
-                            paddingLeft: densityConfig.cardPaddingX,
-                            paddingRight: densityConfig.cardPaddingX,
-                            paddingTop: densityConfig.cardPaddingY,
-                            paddingBottom: densityConfig.cardPaddingY,
-                            borderColor: block.borderColor,
-                            backgroundColor: isDarkOverlay
-                              ? "rgba(255, 255, 255, 0.08)"
-                              : toSoftTint(block.borderColor, 0.24),
-                            boxShadow: "0 2px 6px rgba(15, 23, 42, 0.10)",
-                          }}>
-                          {settings.showCourseCode ? (
-                            <div
-                              className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-black tracking-[-0.04em]"
-                              style={{
-                                color: subjectText,
-                                fontSize: resolvedCodeSize,
-                                lineHeight: 1,
-                                width: "100%",
-                              }}>
-                              {block.courseCode}
-                            </div>
-                          ) : null}
-                          {settings.showVenue && venueLabel ? (
-                            <div
-                              className="mt-0.5 max-w-full whitespace-normal wrap-break-word font-semibold"
-                              style={{
-                                color: tableSubtleText,
-                                fontSize: venueTextSize,
-                                lineHeight: 1.05,
-                              }}>
-                              {venueLabel}
-                            </div>
-                          ) : null}
-                          {!isCompact &&
-                          settings.showCourseName &&
-                          block.subjectName ? (
-                            <div
-                              className="mt-0.5 max-w-full whitespace-normal wrap-break-word text-[6.3px] leading-[1.1] font-medium"
-                              style={{ color: tableSubtleText }}>
-                              {block.subjectName}
-                            </div>
-                          ) : null}
-                          {!isCompact &&
-                          settings.showLecturer &&
-                          block.lecturer ? (
-                            <div
-                              className="max-w-full whitespace-normal wrap-break-word text-[5.75px] leading-[1.1] mt-0.5 font-medium"
-                              style={{ color: tableSubtleText }}>
-                              {block.lecturer}
-                            </div>
-                          ) : null}
-                          {timeLabel ? (
-                            <div
-                              className="mt-0.5 max-w-full whitespace-normal wrap-break-word font-medium"
-                              style={{
-                                color: tableSubtleText,
-                                fontSize: timeTextSize,
-                                lineHeight: 1.05,
-                              }}>
-                              {timeLabel}
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })(),
-                  )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
