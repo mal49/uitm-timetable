@@ -7,9 +7,9 @@ import type { Campus, Faculty } from "./types";
 
 export const FALLBACK_CAMPUSES: Campus[] = [
   { code: "B", fullname: "Selangor Campus" },
-  { code: "HEP", fullname: "Selangor Campus - Language Courses" },
-  { code: "APB", fullname: "Selangor Campus - CITU Courses" },
-  { code: "CITU", fullname: "Selangor Campus - Co-Curriculum Courses" },
+  { code: "APB", fullname: "Selangor Campus - Language Courses" },
+  { code: "CITU", fullname: "Selangor Campus - CITU Courses" },
+  { code: "HEP", fullname: "Selangor Campus - Co-Curriculum Courses" },
   { code: "A", fullname: "A - UiTM Kampus Seri Iskandar" },
   { code: "A4", fullname: "A4 - UiTM Kampus Tapah" },
   { code: "B10", fullname: "B10 - UiTM Kampus Dengkil" },
@@ -56,6 +56,24 @@ export const FALLBACK_CAMPUSES: Campus[] = [
 
 /** Campus codes that use the Shah Alam special-course buckets. */
 export const SHAH_ALAM_SPECIAL_CAMPUS_CODES = new Set(["HEP", "APB", "CITU"]);
+
+/** Known course-prefix hints for Shah Alam special buckets. */
+export const SHAH_ALAM_SPECIAL_COURSE_PREFIXES: Record<string, readonly string[]> = {
+  APB: [
+    "ELC",
+    "EWC",
+    "TAC",
+    "TMC",
+    "TJC",
+    "TFC",
+    "TGC",
+    "TKC",
+    "TBC",
+    "TIC",
+  ],
+  CITU: ["CTU"],
+  HEP: ["HBU", "HKS", "HKA", "HKK", "HKB"],
+};
 
 /** Faculty selection is only required by the upstream form for Selangor campus. */
 export const FACULTY_REQUIRED_CAMPUS_CODES = new Set(["B"]);
