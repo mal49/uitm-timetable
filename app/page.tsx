@@ -1094,7 +1094,7 @@ export default function Home() {
 
         {items.length > 0 && (
           <section className="relative overflow-hidden bg-[linear-gradient(180deg,#2e1d52_0%,#17182d_100%)] py-12 text-white sm:py-16">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(125,244,195,0.12),transparent_30%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(125,244,195,0.12),transparent_30%)]" />
             <div className="mx-auto max-w-6xl px-4 sm:px-6">
               {combinedEntries.length === 0 ? (
                 <div className="flex min-h-65 flex-col items-center justify-center rounded-[2rem] border border-white/10 bg-white/8 px-5 py-12 text-center backdrop-blur-sm">
@@ -1167,7 +1167,7 @@ export default function Home() {
                         size="sm"
                         onClick={() => exportTimetable()}
                         disabled={exporting}
-                        className="h-9 w-full gap-2 rounded-full border-0 bg-[#21d4cf] px-4 font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.2)] hover:bg-[#3fe1dc] sm:w-auto">
+                        className="relative z-10 h-9 w-full gap-2 rounded-full border-0 bg-[#21d4cf] px-4 font-semibold text-slate-950 pointer-events-auto shadow-[0_12px_24px_rgba(33,212,207,0.2)] hover:bg-[#3fe1dc] sm:w-auto">
                         {exporting ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : null}
