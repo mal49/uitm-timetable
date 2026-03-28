@@ -532,12 +532,13 @@ export function WallpaperTable({
             {DAYS.map((day, dayIndex) => (
               <div
                 key={day}
-                className="relative min-h-0"
+                className="relative min-h-0 overflow-hidden"
                 style={{
                   borderRight:
                     day === DAYS[DAYS.length - 1]
                       ? "none"
                       : `1px solid ${tableGrid}`,
+                  contain: "paint",
                 }}>
                 <div
                   className="absolute inset-0 grid"
@@ -591,7 +592,7 @@ export function WallpaperTable({
                       return (
                         <div
                           key={block.id}
-                          className="absolute overflow-hidden rounded-[10px] border-2 flex flex-col items-start justify-center text-left shadow-[0_3px_8px_rgba(0,0,0,0.14)]"
+                          className="absolute flex flex-col items-start justify-center overflow-hidden rounded-[10px] border-2 text-left"
                           style={{
                             top: `${block.top}%`,
                             left: `calc(${block.columnIndex * widthPercent}% + ${inset}px)`,
@@ -606,6 +607,7 @@ export function WallpaperTable({
                             backgroundColor: isDarkOverlay
                               ? "rgba(255, 255, 255, 0.08)"
                               : toSoftTint(block.borderColor, 0.24),
+                            boxShadow: "0 2px 6px rgba(15, 23, 42, 0.10)",
                           }}>
                           {settings.showCourseCode ? (
                             <div
