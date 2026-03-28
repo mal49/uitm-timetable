@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { toJpeg, toPng } from "html-to-image";
+import { toBlob } from "html-to-image";
 import Image from "next/image";
 import { Smartphone, Download, Bolt, Camera, Wifi, BatteryFull, Signal, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,17 +53,32 @@ function formatLockscreenTime(date: Date) {
   }).format(date);
 }
 
+const PORTRAIT_EXPORT_SIZE = {
+  width: 390,
+  height: 844,
+};
+
+const LANDSCAPE_EXPORT_SIZE = {
+  width: 844,
+  height: 390,
+};
+
+const PORTRAIT_TOP_PADDING = "188px";
+const PORTRAIT_TOP_PADDING_WITH_WIDGET = "222px";
+const PORTRAIT_BOTTOM_PADDING = "92px";
+
 export function PreviewPanel() {
   const { settings, updateSettings, entries, colorOverrides } = useWallpaper();
   const theme = getThemePreset(settings.themeId);
   const exportRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
   const now = new Date();
   const lockDate = formatLockscreenDate(now);
   const lockTime = formatLockscreenTime(now);
 
   // Render the selected layout
-  const renderLayout = (layoutStyle: LayoutStyle) => {
+  const renderLayout = (layoutStyle: LayoutStyle, renderMode: "preview" | "export") => {
     const props = { entries, colorOverrides };
     
     switch (layoutStyle) {
@@ -78,7 +93,7 @@ export function PreviewPanel() {
       case "agenda":
         return <AgendaStyle {...props} />;
       case "wallpaper-table":
-        return <WallpaperTable {...props} />;
+        return <WallpaperTable {...props} renderMode={renderMode} />;
       default:
         return assertNever(layoutStyle);
     }
@@ -94,39 +109,107 @@ export function PreviewPanel() {
   const lockscreenTextColor = theme.lockscreenTextColor ?? "#ffffff";
   const lockscreenTitleColor = theme.lockscreenTitleColor ?? lockscreenTextColor;
   const widgetTextColor = theme.id === "light" || theme.id === "glass" ? "#1f1a17" : "#ffffff";
+  const exportSize =
+    settings.orientation === "portrait"
+      ? PORTRAIT_EXPORT_SIZE
+      : LANDSCAPE_EXPORT_SIZE;
 
   async function handleExport() {
     if (!exportRef.current || isExporting) {
       return;
     }
 
+    setExportError("");
     setIsExporting(true);
 
     try {
       const filenameBase = `uitm-class-canvas-${settings.layoutStyle}-${settings.orientation}`;
       const exportOptions = {
-        pixelRatio: 2,
+        pixelRatio: 3,
         quality: settings.exportQuality,
+        cacheBust: true,
         // Prevent html-to-image font embedding crash when a stylesheet font entry is undefined.
         skipFonts: true,
+        type:
+          settings.exportFormat === "jpeg" ? "image/jpeg" : "image/png",
       };
 
-      const dataUrl =
-        settings.exportFormat === "jpeg"
-          ? await toJpeg(exportRef.current, exportOptions)
-          : await toPng(exportRef.current, exportOptions);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const blob = await toBlob(exportRef.current, exportOptions);
+      if (!blob) {
+        throw new Error("Failed to render wallpaper image.");
+      }
 
+      const dataUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.download = `${filenameBase}.${settings.exportFormat}`;
       link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(dataUrl), 1500);
+    } catch (error) {
+      setExportError(
+        error instanceof Error ? error.message : "Failed to export wallpaper.",
+      );
     } finally {
       setIsExporting(false);
     }
   }
 
+  const wallpaperScene =
+    settings.orientation === "portrait" ? (
+      <div
+        className="relative overflow-hidden"
+        style={{
+          width: exportSize.width,
+          height: exportSize.height,
+          background: theme.background,
+          fontSize: `${settings.fontSize}em`,
+          fontWeight: fontWeightMap[settings.fontWeight],
+        }}
+      >
+        <div
+          className="h-full w-full overflow-hidden"
+          style={{
+            boxSizing: "border-box",
+            paddingTop: settings.showWidgetPosition
+              ? PORTRAIT_TOP_PADDING_WITH_WIDGET
+              : PORTRAIT_TOP_PADDING,
+            paddingBottom: PORTRAIT_BOTTOM_PADDING,
+          }}
+        >
+          {renderLayout(settings.layoutStyle, "export")}
+        </div>
+      </div>
+    ) : (
+      <div
+        className="relative overflow-hidden"
+        style={{
+          width: exportSize.width,
+          height: exportSize.height,
+          background: theme.background,
+          fontSize: `${settings.fontSize}em`,
+          fontWeight: fontWeightMap[settings.fontWeight],
+        }}
+      >
+        <div
+          className="wallpaper-preview-shell h-full w-full overflow-hidden"
+          style={{
+            boxSizing: "border-box",
+            paddingTop: settings.showWidgetPosition ? "58px" : "42px",
+            paddingBottom: "16px",
+            paddingLeft: "10px",
+            paddingRight: landscapeRightPadding,
+          }}
+        >
+          {renderLayout(settings.layoutStyle, "export")}
+        </div>
+      </div>
+    );
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="relative h-full min-h-0 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-4 sm:px-5">
         <div className="flex items-center gap-2">
@@ -164,7 +247,7 @@ export function PreviewPanel() {
       </div>
 
       {/* Preview Area */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6 bg-muted/30">
+      <div className="min-h-0 flex-1 overflow-auto bg-muted/30 p-4 sm:p-6">
         <div className="h-full flex items-center justify-center">
           {/* Device Mockup Container */}
           <div className="relative">
@@ -200,7 +283,6 @@ export function PreviewPanel() {
                     }}
                   >
                     <div
-                      ref={exportRef}
                       className="absolute inset-0 overflow-hidden"
                       style={{
                         background: theme.background,
@@ -214,11 +296,13 @@ export function PreviewPanel() {
                         className="h-full w-full overflow-hidden"
                         style={{
                           boxSizing: "border-box",
-                          paddingTop: settings.showWidgetPosition ? "236px" : "172px",
-                          paddingBottom: "74px",
+                          paddingTop: settings.showWidgetPosition
+                            ? PORTRAIT_TOP_PADDING_WITH_WIDGET
+                            : PORTRAIT_TOP_PADDING,
+                          paddingBottom: PORTRAIT_BOTTOM_PADDING,
                         }}
                       >
-                        {renderLayout(settings.layoutStyle)}
+                        {renderLayout(settings.layoutStyle, "preview")}
                       </div>
                     </div>
 
@@ -282,16 +366,6 @@ export function PreviewPanel() {
                       <div className="h-1.5 w-28 rounded-full bg-white/85" />
                     </div>
 
-                    <div
-                      className="h-full w-full overflow-hidden"
-                      style={{
-                        boxSizing: "border-box",
-                        paddingTop: settings.showWidgetPosition ? "236px" : "172px",
-                        paddingBottom: "74px",
-                      }}
-                    >
-                      {renderLayout(settings.layoutStyle)}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -327,7 +401,6 @@ export function PreviewPanel() {
                     }}
                   >
                     <div
-                      ref={exportRef}
                       className="absolute inset-0 overflow-hidden"
                       style={{
                         background: theme.background,
@@ -347,7 +420,7 @@ export function PreviewPanel() {
                           paddingRight: landscapeRightPadding,
                         }}
                       >
-                        {renderLayout(settings.layoutStyle)}
+                        {renderLayout(settings.layoutStyle, "preview")}
                       </div>
                     </div>
 
@@ -390,7 +463,7 @@ export function PreviewPanel() {
                         paddingRight: landscapeRightPadding,
                       }}
                     >
-                      {renderLayout(settings.layoutStyle)}
+                      {renderLayout(settings.layoutStyle, "preview")}
                     </div>
                   </div>
                 </div>
@@ -398,7 +471,7 @@ export function PreviewPanel() {
             )}
 
             {/* Carousel Dots */}
-            <div className="mt-6 flex items-center justify-center gap-2">
+            <div className="pointer-events-none mt-6 flex items-center justify-center gap-2">
               <span className="h-2 w-2 rounded-full bg-foreground/25" />
               <span className="h-2 w-2 rounded-full bg-foreground/60" />
               <span className="h-2 w-2 rounded-full bg-foreground/25" />
@@ -407,10 +480,20 @@ export function PreviewPanel() {
         </div>
       </div>
 
+      <div aria-hidden="true" className="fixed -left-[9999px] top-0 pointer-events-none opacity-0">
+        <div ref={exportRef}>{wallpaperScene}</div>
+      </div>
+
+      {exportError ? (
+        <div className="border-t border-border px-4 py-3 text-sm text-red-600 sm:px-5">
+          {exportError}
+        </div>
+      ) : null}
+
       {/* Export Button */}
-      <div className="px-4 sm:px-5 py-4 border-t border-border">
+      <div className="relative z-30 border-t border-border bg-background px-4 py-4 sm:px-5">
         <Button
-          className="w-full rounded-full border-0 bg-[#21d4cf] font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.24)] hover:bg-[#3fe1dc]"
+          className="relative z-30 w-full rounded-full border-0 bg-[#21d4cf] font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.24)] hover:bg-[#3fe1dc]"
           size="lg"
           onClick={handleExport}
           disabled={isExporting}

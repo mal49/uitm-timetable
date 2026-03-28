@@ -12,15 +12,16 @@ export function SiteFooter() {
               <div className="flex items-center gap-2.5">
                 <Smartphone className="h-3.5 w-3.5 text-[#7df4c3]" />
                 <p className="text-sm font-semibold tracking-tight text-white">
-                  UiTM Class Canvas
+                  UiTM Schedule
                 </p>
               </div>
               <p className="max-w-xl text-sm leading-6 text-white/65">
-                Search your classes, lock in the right group combo, and export a schedule wallpaper that actually looks good.
+                Search your classes, lock in the right group combo, and export a
+                schedule wallpaper that actually looks good.
               </p>
             </div>
 
-            <div className="min-w-0 space-y-1 sm:max-w-[280px] sm:text-right">
+            <div className="min-w-0 space-y-1 sm:max-w-70 sm:text-right">
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
                 Source
               </p>
@@ -31,8 +32,7 @@ export function SiteFooter() {
                 href="https://simsweb4.uitm.edu.my"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-white transition-colors hover:text-[#7df4c3] sm:justify-end"
-              >
+                className="inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-white transition-colors hover:text-[#7df4c3] sm:justify-end">
                 <span className="truncate">simsweb4.uitm.edu.my</span>
                 <ExternalLink className="h-3.5 w-3.5 shrink-0" />
               </a>
@@ -43,7 +43,7 @@ export function SiteFooter() {
             <p className="max-w-2xl">
               Unofficial UiTM class schedule and wallpaper tool for students.
             </p>
-            <p className="shrink-0">© {year} UiTM Class Canvas</p>
+            <p className="shrink-0">© {year} UiTM Schedule</p>
           </div>
         </div>
       </div>

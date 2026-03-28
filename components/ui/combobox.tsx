@@ -33,14 +33,15 @@ export function Combobox({
   const [filter, setFilter] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const normalizedFilter = normalizeFilterText(filter);
 
   const filtered =
-    filter.trim() === ""
+    normalizedFilter === ""
       ? options
       : options.filter(
           (o) =>
-            o.code.toLowerCase().includes(filter.toLowerCase()) ||
-            o.fullname.toLowerCase().includes(filter.toLowerCase())
+            normalizeFilterText(o.code).includes(normalizedFilter) ||
+            normalizeFilterText(o.fullname).includes(normalizedFilter)
         );
 
   const selected = options.find((o) => o.code === value);
@@ -142,6 +143,7 @@ export function Combobox({
               let lastGroup: string | undefined = undefined;
               let groupIndex = 0;
               filtered.forEach((opt) => {
+                const optionKey = `${opt.code}::${opt.fullname}`;
                 if (opt.group !== lastGroup) {
                   lastGroup = opt.group;
                   rendered.push(
@@ -156,7 +158,7 @@ export function Combobox({
                 }
                 rendered.push(
                   <li
-                    key={opt.code}
+                    key={optionKey}
                     role="option"
                     aria-selected={opt.code === value}
                     onClick={() => handleSelect(opt.code)}
@@ -187,4 +189,8 @@ export function Combobox({
       )}
     </div>
   );
+}
+
+function normalizeFilterText(value: string) {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
 }

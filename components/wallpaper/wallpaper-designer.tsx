@@ -479,7 +479,7 @@ export function WallpaperDesigner({
               </details>
 
               {/* Hidden export node */}
-              <div aria-hidden="true" className="fixed left-[-10000px] top-0 pointer-events-none opacity-0">
+              <div aria-hidden="true" className="fixed -left-2500 top-0 pointer-events-none opacity-0">
                 <div ref={exportRef}>
                   <WallpaperCanvas
                     device={orientedDevice}
