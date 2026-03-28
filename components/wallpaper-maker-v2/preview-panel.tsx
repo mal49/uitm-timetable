@@ -463,7 +463,7 @@ export function PreviewPanel() {
                         paddingRight: landscapeRightPadding,
                       }}
                     >
-                      {renderLayout(settings.layoutStyle)}
+                      {renderLayout(settings.layoutStyle, "preview")}
                     </div>
                   </div>
                 </div>
