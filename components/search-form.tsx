@@ -6,13 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
-import { FALLBACK_CAMPUSES, FALLBACK_FACULTIES, NO_FACULTY_CAMPUS_CODES } from "@/lib/constants";
+import {
+  FACULTY_REQUIRED_CAMPUS_CODES,
+  FALLBACK_CAMPUSES,
+  FALLBACK_FACULTIES,
+  SHAH_ALAM_SPECIAL_CAMPUS_CODES,
+} from "@/lib/constants";
 import type { ComboboxOption } from "@/components/ui/combobox";
 import type { SearchRequest } from "@/lib/types";
 
 const CAMPUS_OPTIONS: ComboboxOption[] = FALLBACK_CAMPUSES.map((c) => ({
   ...c,
-  group: NO_FACULTY_CAMPUS_CODES.has(c.code) ? "Shah Alam – Course Types" : "Campuses",
+  group: SHAH_ALAM_SPECIAL_CAMPUS_CODES.has(c.code) ? "Shah Alam – Course Types" : "Campuses",
 }));
 
 interface SearchFormProps {
@@ -25,17 +30,16 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
   const [faculty, setFaculty] = useState("");
   const [course, setCourse] = useState("");
 
-  const facultyRequired = !NO_FACULTY_CAMPUS_CODES.has(campus);
+  const facultyRequired = FACULTY_REQUIRED_CAMPUS_CODES.has(campus);
 
   function handleCampusChange(value: string) {
     setCampus(value);
-    // Clear faculty when switching to a campus that doesn't need one
-    if (NO_FACULTY_CAMPUS_CODES.has(value)) setFaculty("");
+    if (!FACULTY_REQUIRED_CAMPUS_CODES.has(value)) setFaculty("");
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const needsFaculty = !NO_FACULTY_CAMPUS_CODES.has(campus);
+    const needsFaculty = FACULTY_REQUIRED_CAMPUS_CODES.has(campus);
     if (!campus || (needsFaculty && !faculty) || !course.trim()) return;
     onSubmit({ campus, faculty, course: course.trim() });
   }

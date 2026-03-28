@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMainPageInfo, searchSubjects } from "@/lib/scraper";
-import { NO_FACULTY_CAMPUS_CODES } from "@/lib/constants";
+import { FACULTY_REQUIRED_CAMPUS_CODES } from "@/lib/constants";
 import type { SearchRequest } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   if (!campus || typeof campus !== "string" || !campus.trim()) {
     return NextResponse.json({ error: "Missing or invalid field: campus" }, { status: 400 });
   }
-  const facultyRequired = !NO_FACULTY_CAMPUS_CODES.has(campus.trim());
+  const facultyRequired = FACULTY_REQUIRED_CAMPUS_CODES.has(campus.trim());
   if (facultyRequired && (!faculty || typeof faculty !== "string" || !faculty.trim())) {
     return NextResponse.json({ error: "Missing or invalid field: faculty" }, { status: 400 });
   }
