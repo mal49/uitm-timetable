@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { SketchPicker, type ColorResult } from "react-color";
 import { useWallpaper, type ThemeId } from "./wallpaper-context";
 import { cn } from "@/lib/utils";
@@ -91,6 +92,11 @@ function normalizeHexColor(value?: string): string | null {
 export function ThemeSelector() {
   const { settings, updateSettings } = useWallpaper();
   const customColor = normalizeHexColor(settings.customBackground) ?? CUSTOM_COLOR_FALLBACK;
+  const [pickerColor, setPickerColor] = useState(customColor);
+
+  useEffect(() => {
+    setPickerColor(customColor);
+  }, [customColor]);
 
   function selectCustomColor(color: string) {
     updateSettings({
@@ -100,6 +106,15 @@ export function ThemeSelector() {
   }
 
   function handleCustomColorChange(color: ColorResult) {
+    const nextColor = color.hex.toUpperCase();
+    setPickerColor(nextColor);
+
+    if (settings.themeId !== "custom") {
+      updateSettings({ themeId: "custom" });
+    }
+  }
+
+  function handleCustomColorChangeComplete(color: ColorResult) {
     selectCustomColor(color.hex.toUpperCase());
   }
 
@@ -189,15 +204,11 @@ export function ThemeSelector() {
 
               <div
                 className="mx-auto w-full max-w-[272px] overflow-hidden rounded-lg border border-slate-200 bg-white"
-                onMouseDown={() => {
-                  if (settings.themeId !== "custom") {
-                    selectCustomColor(customColor);
-                  }
-                }}
               >
                 <SketchPicker
-                  color={customColor}
+                  color={pickerColor}
                   onChange={handleCustomColorChange}
+                  onChangeComplete={handleCustomColorChangeComplete}
                   presetColors={CUSTOM_SWATCHES}
                   width="252px"
                   styles={{

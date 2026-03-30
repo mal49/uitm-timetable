@@ -69,7 +69,7 @@ const PORTRAIT_BOTTOM_PADDING = "92px";
 
 export function PreviewPanel() {
   const { settings, updateSettings, entries, colorOverrides } = useWallpaper();
-  const theme = getThemePreset(settings.themeId);
+  const theme = getThemePreset(settings.themeId, settings.customBackground);
   const exportRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState("");
