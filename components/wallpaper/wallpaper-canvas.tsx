@@ -52,6 +52,7 @@ export function WallpaperCanvas({
   const topPadding = isIpad ? 104 : 86;
   const headerHeight = isIpad ? 190 : 176;
   const overlayRadiusPx = Math.max(16, Math.round(device.frameRadiusPx * 0.4));
+  const footerInset = footer ? (isIpad ? 68 : 56) : 32;
 
   const rotateStyle: React.CSSProperties | undefined = isLandscape
     ? {
@@ -136,7 +137,7 @@ export function WallpaperCanvas({
             className="absolute left-0 right-0 flex items-center justify-center"
             style={{
               top: headerHeight + 4,
-              bottom: 32,
+              bottom: footerInset,
               padding: isIpad ? 16 : 12,
             }}
           >
@@ -152,9 +153,19 @@ export function WallpaperCanvas({
               <div className="w-full h-full p-3">{overlay}</div>
             </div>
           </div>
+
+          {footer ? (
+            <div
+              className="absolute left-0 right-0 px-6 text-center text-white/85"
+              style={{
+                bottom: isIpad ? 20 : 16,
+              }}
+            >
+              {footer}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
   );
 }
-
