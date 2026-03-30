@@ -194,7 +194,7 @@ export function WallpaperTable({
   renderMode = "preview",
 }: WallpaperTableProps) {
   const { settings } = useWallpaper();
-  const theme = getThemePreset(settings.themeId);
+  const theme = getThemePreset(settings.themeId, settings.customBackground);
   const activeDays = useMemo(() => {
     const used = DAYS.filter((day) =>
       entries.some((entry) => getDayIndex(entry.day || "") === DAYS.indexOf(day)),
