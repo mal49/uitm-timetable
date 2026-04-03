@@ -1,13 +1,13 @@
 "use client";
 
 import { toBlob } from "html-to-image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutGrid,
   List,
   AlertCircle,
   CalendarX2,
-  Smartphone,
+  GraduationCap,
   Trash2,
   Wand2,
   Loader2,
@@ -15,6 +15,13 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { MyStudentImportPanel } from "@/components/mystudent-import-panel";
 import { SearchForm } from "@/components/search-form";
 import {
   TimetableGrid,
@@ -24,6 +31,10 @@ import { TimetableTable } from "@/components/timetable-table";
 import { WallpaperMaker } from "@/components/wallpaper-maker-v2/wallpaper-maker";
 import { Input } from "@/components/ui/input";
 import { SiteFooter } from "@/components/site-footer";
+import {
+  MYSTUDENT_IMPORT_SOURCE,
+  type MyStudentImportResult,
+} from "@/lib/importers/mystudent";
 import type {
   GroupedTimetable,
   SearchRequest,
@@ -44,7 +55,8 @@ type SubjectMatch = { subject: string; path: string };
 
 type SubjectItem = {
   id: string;
-  request: SearchRequest;
+  source: "search" | "mystudent";
+  request?: SearchRequest;
   course: string;
   status: ItemStatus;
   error?: string;
@@ -55,7 +67,11 @@ type SubjectItem = {
   selectedGroup: string | null;
   groupFilter: string;
   showSelectedOnly: boolean;
+  importedAt?: string;
+  exportedAt?: string;
 };
+
+const IMPORT_STORAGE_KEY = "uitm-timetable-gen.mystudent.latest-import";
 
 const PRESET_SUBJECT_HEX = [
   "#3b82f6",
@@ -146,6 +162,35 @@ function normalizeHexColor(value: string) {
   return /^#[0-9a-fA-F]{6}$/.test(withHash) ? withHash.toLowerCase() : null;
 }
 
+function buildSubjectItemsFromImport(
+  result: MyStudentImportResult,
+): SubjectItem[] {
+  return result.subjects.map((subject) => ({
+    id: `mystudent-${subject.course}-${makeId()}`,
+    source: "mystudent",
+    course: subject.course,
+    status: "ready",
+    matches: [],
+    subjectName: subject.subjectName,
+    grouped: subject.grouped,
+    selectedGroup: subject.defaultGroup,
+    groupFilter: "",
+    showSelectedOnly: false,
+    importedAt: result.importedAt,
+    exportedAt: result.exportedAt,
+  }));
+}
+
+function formatImportTimestampLabel(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-MY", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [items, setItems] = useState<SubjectItem[]>([]);
@@ -162,10 +207,37 @@ export default function Home() {
   const [subjectColorDrafts, setSubjectColorDrafts] = useState<
     Record<string, string>
   >({});
+  const [savedImport, setSavedImport] = useState<MyStudentImportResult | null>(
+    null,
+  );
 
   const timetableRef = useRef<HTMLDivElement | null>(null);
   const exportRef = useRef<HTMLDivElement | null>(null);
   // Export captures an off-screen, fixed-width desktop tree so JPGs never rely on mobile layout.
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(IMPORT_STORAGE_KEY);
+      if (!stored) return;
+
+      const parsed = JSON.parse(stored) as MyStudentImportResult;
+      if (
+        parsed?.source !== MYSTUDENT_IMPORT_SOURCE ||
+        !Array.isArray(parsed.subjects) ||
+        parsed.subjects.length === 0
+      ) {
+        return;
+      }
+
+      setSavedImport(parsed);
+      setItems((prev) => {
+        if (prev.some((item) => item.source === "mystudent")) return prev;
+        return [...buildSubjectItemsFromImport(parsed), ...prev];
+      });
+    } catch {
+      // Ignore corrupted local data and allow a fresh import.
+    }
+  }, []);
 
   async function fetchSubjects(request: SearchRequest) {
     const res = await fetch("/api/subjects", {
@@ -204,6 +276,7 @@ export default function Home() {
 
     const newItem: SubjectItem = {
       id,
+      source: "search",
       request: { ...data, course },
       course,
       status: "loading_subjects",
@@ -361,6 +434,40 @@ export default function Home() {
     if (!normalized) return;
     setSubjectColorOverrides((prev) => ({ ...prev, [course]: normalized }));
     setSubjectColorDrafts((prev) => ({ ...prev, [course]: normalized }));
+  }
+
+  function handleConfirmMyStudentImport(result: MyStudentImportResult) {
+    const importedItems = buildSubjectItemsFromImport(result);
+    setSavedImport(result);
+    setGlobalError("");
+    setItems((prev) => [
+      ...importedItems,
+      ...prev.filter((item) => item.source !== "mystudent"),
+    ]);
+
+    try {
+      window.localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(result));
+    } catch {
+      // Ignore localStorage quota/write failures.
+    }
+  }
+
+  function handleRestoreSavedImport() {
+    if (!savedImport) return;
+    setItems((prev) => [
+      ...buildSubjectItemsFromImport(savedImport),
+      ...prev.filter((item) => item.source !== "mystudent"),
+    ]);
+  }
+
+  function handleClearSavedImport() {
+    setSavedImport(null);
+    setItems((prev) => prev.filter((item) => item.source !== "mystudent"));
+    try {
+      window.localStorage.removeItem(IMPORT_STORAGE_KEY);
+    } catch {
+      // Ignore localStorage failures.
+    }
   }
 
   async function exportTimetable() {
@@ -594,7 +701,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between rounded-[1.75rem] border border-white/55 bg-white/92 px-5 py-3 text-slate-900 shadow-[0_18px_40px_rgba(45,88,135,0.12)] backdrop-blur-xl sm:px-7 sm:py-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-100 ring-1 ring-cyan-200">
-              <Smartphone className="h-4 w-4 text-cyan-700" />
+              <GraduationCap className="h-4 w-4 text-cyan-700" />
             </div>
             <span className="text-sm font-semibold tracking-tight sm:text-base">
               UiTM Schedule
@@ -609,14 +716,10 @@ export default function Home() {
       </header>
 
       <main className="relative z-10">
-        <section className="relative z-20 pb-16 pt-10 text-white sm:pb-20 sm:pt-12">
-          <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 sm:px-6">
+        <section className="relative z-20 pb-24 pt-10 text-white sm:pb-28 sm:pt-12">
+          <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 sm:gap-7 sm:px-6">
             <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/78 backdrop-blur-sm">
-                <span className="h-2 w-2 rounded-full bg-[#7df4c3]" />
-                Schedule wallpaper maker
-              </div>
-              <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl">
+              <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl">
                 Turn Your Schedule
                 <span className="block text-[#7df4c3]">into a wallpaper</span>
               </h1>
@@ -624,29 +727,54 @@ export default function Home() {
                 Search subjects, choose the right groups, and generate a custom
                 wallpaper from your final class schedule.
               </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                <div className="rounded-full bg-[#21d4cf] px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_10px_24px_rgba(33,212,207,0.24)]">
-                  Start with your schedule
-                </div>
-              </div>
             </div>
 
             <div className="mx-auto w-full max-w-4xl">
-              <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-[0_26px_60px_rgba(5,10,25,0.18)] backdrop-blur-md sm:p-6">
-                <div className="flex flex-col gap-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-white">
-                      Build your schedule
-                    </p>
-                    <p className="text-xs leading-5 text-white/65 sm:text-sm">
-                      Pick your campus, faculty, and course code to pull in the
-                      schedule you want to turn into a wallpaper.
-                    </p>
-                  </div>
+              <div className="rounded-[1.75rem] border border-white/10 bg-white/10 p-4 shadow-[0_18px_42px_rgba(5,10,25,0.16)] backdrop-blur-md sm:p-5">
+                <div className="mb-3">
+                  <MyStudentImportPanel
+                    onConfirmImport={handleConfirmMyStudentImport}
+                    hasSavedImport={Boolean(savedImport)}
+                    savedImportLabel={
+                      savedImport
+                        ? `Latest import: ${savedImport.summary.subjectCount} subjects, ${savedImport.summary.sessionCount} sessions${
+                            savedImport.importedAt
+                              ? `, restored from ${formatImportTimestampLabel(savedImport.importedAt)}`
+                              : ""
+                          }`
+                        : undefined
+                    }
+                    onRestoreSavedImport={handleRestoreSavedImport}
+                    onClearSavedImport={handleClearSavedImport}
+                  />
                 </div>
-                <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-[#6b5a8f]/78 p-4 text-white shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-5">
-                  <SearchForm onSubmit={handleAddSubject} isLoading={adding} />
-                </div>
+                <Accordion className="rounded-[1.35rem] border border-white/20 bg-[#6b5a8f]/78 px-4 text-white shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:px-5">
+                  <AccordionItem value="manual-search" className="border-none">
+                    <AccordionTrigger className="justify-start gap-3 py-3.5 text-white hover:no-underline sm:py-4 **:data-[slot=accordion-trigger-icon]:ml-0 **:data-[slot=accordion-trigger-icon]:size-5 **:data-[slot=accordion-trigger-icon]:text-white/90">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <p className="text-sm font-semibold text-white">
+                          Manual search
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-white/72 sm:hidden">
+                          Search by campus, faculty, and course code.
+                        </p>
+                        <p className="mt-1 hidden text-xs leading-5 text-white/72 sm:block sm:text-sm">
+                          Pick your campus, faculty, and course code if you want
+                          to build the timetable manually.
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/65">
+                        Tap to expand
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 sm:pb-5">
+                      <SearchForm
+                        onSubmit={handleAddSubject}
+                        isLoading={adding}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
             </div>
           </div>
@@ -732,19 +860,47 @@ export default function Home() {
                                   ) : null}
                                 </div>
                                 <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 sm:text-xs">
-                                  <p className="min-w-0">
-                                    Campus:{" "}
-                                    <span className="font-mono text-slate-700">
-                                      {it.request.campus}
-                                    </span>
-                                  </p>
-                                  <span className="text-slate-300">•</span>
-                                  <p className="min-w-0">
-                                    Faculty:{" "}
-                                    <span className="font-mono text-slate-700">
-                                      {it.request.faculty || "—"}
-                                    </span>
-                                  </p>
+                                  {it.source === "search" && it.request ? (
+                                    <>
+                                      <p className="min-w-0">
+                                        Campus:{" "}
+                                        <span className="font-mono text-slate-700">
+                                          {it.request.campus}
+                                        </span>
+                                      </p>
+                                      <span className="text-slate-300">•</span>
+                                      <p className="min-w-0">
+                                        Faculty:{" "}
+                                        <span className="font-mono text-slate-700">
+                                          {it.request.faculty || "—"}
+                                        </span>
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <p className="min-w-0">
+                                        Source:{" "}
+                                        <span className="font-mono text-slate-700">
+                                          MyStudent import
+                                        </span>
+                                      </p>
+                                      {it.exportedAt ? (
+                                        <>
+                                          <span className="text-slate-300">
+                                            •
+                                          </span>
+                                          <p className="min-w-0">
+                                            Exported:{" "}
+                                            <span className="font-mono text-slate-700">
+                                              {formatImportTimestampLabel(
+                                                it.exportedAt,
+                                              )}
+                                            </span>
+                                          </p>
+                                        </>
+                                      ) : null}
+                                    </>
+                                  )}
                                 </div>
                               </div>
 
@@ -1023,41 +1179,6 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col gap-5">
-                <div className="rounded-[2rem] bg-[#2a1848] p-5 text-white shadow-[0_24px_50px_rgba(42,24,72,0.24)]">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">
-                    How it works
-                  </p>
-                  <div className="mt-4 space-y-4">
-                    <div>
-                      <p className="text-lg font-bold">
-                        1. Search the right subject
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-white/70">
-                        Pull subject matches from campus and faculty, then
-                        choose the exact result if more than one shows up.
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold">
-                        2. Pick the best group combo
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-white/70">
-                        Compare groups manually or let the combo helper look for
-                        a cleaner, clash-free schedule.
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold">
-                        3. Turn it into a wallpaper
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-white/70">
-                        Once your classes look right, open the wallpaper maker
-                        and export a polished version for your phone.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_45px_rgba(15,23,42,0.07)]">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
                     Snapshot
