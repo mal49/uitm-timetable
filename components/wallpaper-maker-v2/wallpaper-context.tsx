@@ -14,11 +14,7 @@ export type ThemeId =
   | "ios-default"
   | "light"
   | "gradient"
-  | "solid"
   | "glass"
-  | "midnight"
-  | "evergreen"
-  | "terracotta"
   | "custom";
 export type DensityLevel = "ultra-compact" | "compact" | "comfortable" | "spacious";
 export type BorderStyle = "none" | "subtle" | "bold" | "rounded";

@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { toBlob } from "html-to-image";
 import { CalendarX2, Download, Palette, Smartphone, SlidersHorizontal } from "lucide-react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,7 +77,6 @@ export function WallpaperDesigner({
 
   const previewMaxWidth = 520;
   const previewScale = Math.min(1, previewMaxWidth / orientedDevice.widthPx);
-  const previewHeight = Math.round(orientedDevice.heightPx * previewScale);
 
   const dateText = formatDateForWallpaper(today);
   const timeText = formatTimeForWallpaper(today);
@@ -243,13 +243,14 @@ export function WallpaperDesigner({
                   {/* iPhone mockup frame */}
                   <div className="relative" style={{ width: previewMaxWidth }}>
                     {/* Phone frame image */}
-                    <img
+                    <Image
                       src="/misc/apple-iphone-15-black-portrait.png"
                       alt="iPhone 15 Frame"
-                      className="relative z-10 pointer-events-none"
+                      width={1419}
+                      height={2796}
+                      sizes={`${previewMaxWidth}px`}
+                      className="relative z-10 pointer-events-none h-auto w-full"
                       style={{
-                        width: "100%",
-                        height: "auto",
                         display: "block",
                       }}
                     />

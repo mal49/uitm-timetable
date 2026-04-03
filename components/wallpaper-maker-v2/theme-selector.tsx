@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { SketchPicker, type ColorResult } from "react-color";
 import { useWallpaper, type ThemeId } from "./wallpaper-context";
 import { cn } from "@/lib/utils";
 import {
@@ -47,40 +49,79 @@ const themeGroups: ThemeGroup[] = [
       },
     ],
   },
-  {
-    title: "Solid Colors",
-    options: [
-      {
-        id: "solid",
-        name: "Indigo",
-        preview: "#4f46e5",
-      },
-      {
-        id: "midnight",
-        name: "Midnight Blue",
-        preview: "#1d3557",
-      },
-      {
-        id: "evergreen",
-        name: "Evergreen",
-        preview: "#1f5f4a",
-      },
-      {
-        id: "terracotta",
-        name: "Terracotta",
-        preview: "#c65d3b",
-      },
-    ],
-  },
 ];
+
+const CUSTOM_COLOR_FALLBACK = "#0F766E";
+const CUSTOM_SWATCHES = [
+  "#D0021B",
+  "#F5A623",
+  "#F8E71C",
+  "#8B572A",
+  "#7ED321",
+  "#417505",
+  "#BD10E0",
+  "#9013FE",
+  "#4A90E2",
+  "#50E3C2",
+  "#B8E986",
+  "#000000",
+  "#4A4A4A",
+  "#9B9B9B",
+  "#FFFFFF",
+];
+
+function normalizeHexColor(value?: string): string | null {
+  if (!value) return null;
+
+  const trimmed = value.trim();
+  if (/^#([a-f\d]{6})$/i.test(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+
+  const shortHexMatch = trimmed.match(/^#([a-f\d]{3})$/i);
+  if (!shortHexMatch) return null;
+
+  const [, shortHex] = shortHexMatch;
+  return `#${shortHex
+    .split("")
+    .map((char) => `${char}${char}`)
+    .join("")
+    .toUpperCase()}`;
+}
 
 export function ThemeSelector() {
   const { settings, updateSettings } = useWallpaper();
+  const customColor = normalizeHexColor(settings.customBackground) ?? CUSTOM_COLOR_FALLBACK;
+  const [pickerColor, setPickerColor] = useState(customColor);
+
+  useEffect(() => {
+    setPickerColor(customColor);
+  }, [customColor]);
+
+  function selectCustomColor(color: string) {
+    updateSettings({
+      themeId: "custom",
+      customBackground: color,
+    });
+  }
+
+  function handleCustomColorChange(color: ColorResult) {
+    const nextColor = color.hex.toUpperCase();
+    setPickerColor(nextColor);
+    updateSettings({
+      themeId: "custom",
+      customBackground: nextColor,
+    });
+  }
+
+  function handleCustomColorChangeComplete(color: ColorResult) {
+    selectCustomColor(color.hex.toUpperCase());
+  }
 
   return (
     <Accordion
       multiple
-      defaultValue={themeGroups.map((group) => group.title)}
+      defaultValue={[...themeGroups.map((group) => group.title), "Custom Color"]}
       className="space-y-3"
     >
       {themeGroups.map((group) => (
@@ -128,9 +169,66 @@ export function ThemeSelector() {
                 );
               })}
             </div>
+
           </AccordionContent>
         </AccordionItem>
       ))}
+
+      <AccordionItem
+        value="Custom Color"
+        className="rounded-xl border border-slate-200 bg-slate-50/60 px-2.5"
+      >
+        <AccordionTrigger className="px-1 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 hover:no-underline">
+          Custom Color
+        </AccordionTrigger>
+        <AccordionContent className="pb-2">
+          <div
+            className={cn(
+              "rounded-xl border p-2.5 transition-all",
+              settings.themeId === "custom"
+                ? "border-[#21d4cf] bg-[#ecfeff]"
+                : "border-slate-200 bg-white"
+            )}
+          >
+            <div className="space-y-2.5">
+              <div>
+                <div>
+                  <div className="text-[13px] font-semibold text-slate-900">
+                    Custom Color
+                  </div>
+                  <p className="text-[10px] leading-relaxed text-slate-500">
+                    Pick any solid background color.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="mx-auto w-full max-w-[272px] overflow-hidden rounded-lg border border-slate-200 bg-white"
+              >
+                <SketchPicker
+                  color={pickerColor}
+                  onChange={handleCustomColorChange}
+                  onChangeComplete={handleCustomColorChangeComplete}
+                  presetColors={CUSTOM_SWATCHES}
+                  width="252px"
+                  styles={{
+                    default: {
+                      picker: {
+                        width: "252px",
+                        boxShadow: "none",
+                        borderRadius: "0",
+                        background: "#ffffff",
+                        padding: "10px",
+                        fontFamily: "inherit",
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
     </Accordion>
   );
 }

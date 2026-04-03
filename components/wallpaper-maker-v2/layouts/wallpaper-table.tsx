@@ -102,6 +102,12 @@ function formatVenueLabel(venue: string): string {
   return compact.length > 16 ? `${compact.slice(0, 16)}...` : compact;
 }
 
+function formatTimeLabel(start: string, end: string): string {
+  if (!start && !end) return "";
+  if (!end) return start;
+  return `${start} - ${end}`;
+}
+
 type TableBlock = {
   id: string;
   dayIndex: number;
@@ -194,7 +200,11 @@ export function WallpaperTable({
   renderMode = "preview",
 }: WallpaperTableProps) {
   const { settings } = useWallpaper();
-  const theme = getThemePreset(settings.themeId);
+  const isPreview = renderMode === "preview";
+  const showPreviewCourseCode = true;
+  const showPreviewDayLabels = true;
+  const showPreviewTimeIndicators = true;
+  const theme = getThemePreset(settings.themeId, settings.customBackground);
   const activeDays = useMemo(() => {
     const used = DAYS.filter((day) =>
       entries.some((entry) => getDayIndex(entry.day || "") === DAYS.indexOf(day)),
@@ -212,7 +222,10 @@ export function WallpaperTable({
       titleSize: "12px",
       headerRowHeight: "22px",
       dayLabelSize: "9px",
-      timeColumnWidth: settings.showTimeIndicators ? "24px" : "0px",
+      timeColumnWidth:
+        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
+          ? "24px"
+          : "0px",
       timeLabelSize: "5.5px",
       minCardHeight: "34px",
       cardPaddingX: "4px",
@@ -234,7 +247,10 @@ export function WallpaperTable({
       titleSize: "13px",
       headerRowHeight: "24px",
       dayLabelSize: "10px",
-      timeColumnWidth: settings.showTimeIndicators ? "28px" : "0px",
+      timeColumnWidth:
+        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
+          ? "28px"
+          : "0px",
       timeLabelSize: "6px",
       minCardHeight: "38px",
       cardPaddingX: "6px",
@@ -256,7 +272,10 @@ export function WallpaperTable({
       titleSize: "13px",
       headerRowHeight: "26px",
       dayLabelSize: "10px",
-      timeColumnWidth: settings.showTimeIndicators ? "30px" : "0px",
+      timeColumnWidth:
+        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
+          ? "30px"
+          : "0px",
       timeLabelSize: "6.2px",
       minCardHeight: "42px",
       cardPaddingX: "7px",
@@ -278,7 +297,10 @@ export function WallpaperTable({
       titleSize: "14px",
       headerRowHeight: "28px",
       dayLabelSize: "10.5px",
-      timeColumnWidth: settings.showTimeIndicators ? "32px" : "0px",
+      timeColumnWidth:
+        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
+          ? "32px"
+          : "0px",
       timeLabelSize: "6.4px",
       minCardHeight: "46px",
       cardPaddingX: "8px",
@@ -294,8 +316,11 @@ export function WallpaperTable({
   const isPortrait = settings.orientation === "portrait";
   const densityConfig = {
     ...baseDensityConfig,
-    boardWidth: isPortrait ? "88%" : baseDensityConfig.boardWidth,
-    boardHeight: isPortrait ? "84%" : baseDensityConfig.boardHeight,
+    outerPaddingX: isPortrait
+      ? `${Math.max(8, Number.parseFloat(baseDensityConfig.outerPaddingX) - 2)}px`
+      : baseDensityConfig.outerPaddingX,
+    boardWidth: isPortrait ? "93%" : baseDensityConfig.boardWidth,
+    boardHeight: isPortrait ? "85%" : baseDensityConfig.boardHeight,
     titleHeightPx: isPortrait
       ? Math.max(30, baseDensityConfig.titleHeightPx - 2)
       : baseDensityConfig.titleHeightPx,
@@ -309,7 +334,8 @@ export function WallpaperTable({
       ? `${Math.max(8.5, Number.parseFloat(baseDensityConfig.dayLabelSize) - 1)}px`
       : baseDensityConfig.dayLabelSize,
     timeColumnWidth:
-      settings.showTimeIndicators && isPortrait
+      (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators) &&
+      isPortrait
         ? `${Math.max(22, Number.parseFloat(baseDensityConfig.timeColumnWidth) - 4)}px`
         : baseDensityConfig.timeColumnWidth,
     minCardHeight: isPortrait
@@ -483,11 +509,13 @@ export function WallpaperTable({
           className="grid text-[10px]"
           style={{
             height: `calc(100% - ${densityConfig.titleHeightPx}px)`,
-                gridTemplateRows: settings.showDayLabels
+                gridTemplateRows: (isPreview
+                  ? showPreviewDayLabels
+                  : settings.showDayLabels)
                   ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
                   : "minmax(0, 1fr)",
           }}>
-          {settings.showDayLabels ? (
+          {(isPreview ? showPreviewDayLabels : settings.showDayLabels) ? (
             <div
               className="grid"
               style={{
@@ -518,7 +546,7 @@ export function WallpaperTable({
             style={{
               gridTemplateColumns: `${timeColumnWidth} repeat(${dayCount}, minmax(0, 1fr))`,
             }}>
-            {settings.showTimeIndicators ? (
+            {(isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators) ? (
               <div
                 className="grid"
                 style={{
@@ -580,12 +608,9 @@ export function WallpaperTable({
                         const isCompact = block.durationMinutes <= 75;
                         const isTight = isCompact || block.columnCount > 1;
                         const venueLabel = formatVenueLabel(block.venue);
-                        const timeLabel =
-                          settings.showTime && !isTight
-                            ? settings.showTimeIndicators
-                              ? block.start
-                              : `${block.start} - ${block.end}`
-                            : "";
+                        const timeLabel = !isPreview && settings.showTime
+                          ? formatTimeLabel(block.start, block.end)
+                          : "";
                         const baseCodeTextSize = Number.parseFloat(
                           isTight ? densityConfig.codeTight : densityConfig.codeNormal,
                         );
@@ -619,67 +644,91 @@ export function WallpaperTable({
                               codeLength >= 11;
                         const codeScale =
                           codeLength >= 10
-                            ? 0.82
+                            ? 0.78
                             : codeLength >= 8
-                              ? 0.9
+                              ? 0.86
                               : codeLength >= 6
-                                ? 0.97
+                                ? 0.92
                                 : 1;
+                        const codeDensityPenalty =
+                          isPortrait && (isOneHourBlock || dayCount >= 6)
+                            ? codeLength >= 8
+                              ? 0.92
+                              : 0.96
+                            : 1;
+                        const previewTightCodePenalty =
+                          renderMode === "preview" &&
+                          isPortrait &&
+                          (isOneHourBlock || block.columnCount > 1 || dayCount >= 6)
+                            ? codeLength >= 6
+                              ? 0.92
+                              : 0.96
+                            : 1;
                         const codeFitScaleX = clamp(
-                          codeLength >= 12
-                            ? 0.62
+                          (codeLength >= 12
+                            ? 0.58
                             : codeLength >= 10
-                              ? 0.7
+                              ? 0.66
                               : codeLength >= 8
-                                ? 0.8
-                                : codeLength >= 7
-                                  ? 0.88
-                                  : 1,
-                          0.62,
+                                ? 0.76
+                                : codeLength >= 6
+                                  ? 0.84
+                                  : 0.92) *
+                            (isPortrait &&
+                            (block.columnCount > 1 ||
+                              dayCount >= 6 ||
+                              isOneHourBlock)
+                              ? 0.92
+                              : 1),
+                          0.58,
+                          1,
+                        );
+                        const previewCodeFitScaleX = clamp(
+                          codeFitScaleX *
+                            (renderMode === "preview" &&
+                            isPortrait &&
+                            (isOneHourBlock || block.columnCount > 1 || dayCount >= 6)
+                              ? 0.9
+                              : 1),
+                          0.54,
                           1,
                         );
                         const resolvedCodeSize = `${(
                           baseCodeTextSize *
                           codeScale *
+                          codeDensityPenalty *
+                          previewTightCodePenalty *
                           tightFitPenalty *
+                          (renderMode === "preview"
+                            ? isPortrait && (isOneHourBlock || dayCount >= 6)
+                              ? 1.22
+                              : 1.34
+                            : 1) *
                           clamp(
                             readableBoost * (prioritizeCodeOnly ? 1.18 : 1),
                             1,
                             2.1,
                           )
                         ).toFixed(2)}px`;
+                        const allowExportSupportingDetails =
+                          renderMode === "export" && block.columnCount === 1;
                         const showVenueDetails =
-                          renderMode === "export" &&
+                          allowExportSupportingDetails &&
                           settings.showVenue &&
-                          !!venueLabel &&
-                          !isOneHourBlock &&
-                          !prioritizeCodeOnly &&
-                          block.slotSpan >= 2 &&
-                          dayCount <= 5 &&
-                          block.columnCount === 1;
-                        const showOneHourVenueStacked =
-                          renderMode === "export" &&
-                          settings.showVenue &&
-                          !!venueLabel &&
-                          isOneHourBlock &&
-                          block.columnCount === 1;
+                          !!venueLabel;
                         const showTimeDetails =
-                          renderMode === "export" &&
-                          !!timeLabel &&
-                          !isOneHourBlock &&
-                          !prioritizeCodeOnly &&
-                          block.columnCount === 1 &&
-                          block.slotSpan >= 2.6 &&
-                          dayCount <= 5;
+                          allowExportSupportingDetails &&
+                          settings.showTime &&
+                          !!timeLabel;
+                        const showLecturerDetails =
+                          allowExportSupportingDetails &&
+                          settings.showLecturer &&
+                          !!block.lecturer;
                         const venueTextSize = `${(
                           Number.parseFloat(
                             isTight ? densityConfig.venueTight : densityConfig.venueNormal,
                           ) *
                           clamp(readableBoost * 0.86, 0.96, 1.45)
-                        ).toFixed(2)}px`;
-                        const inlineVenueTextSize = `${(
-                          Number.parseFloat(densityConfig.venueTight) *
-                          clamp(readableBoost * 0.84, 0.9, 1.2)
                         ).toFixed(2)}px`;
                         const timeTextSize = `${(
                           Number.parseFloat(
@@ -723,47 +772,22 @@ export function WallpaperTable({
                                 : toSoftTint(block.borderColor, 0.24),
                               boxShadow: "0 1px 2px rgba(15, 23, 42, 0.10)",
                             }}>
-                            {settings.showCourseCode ? (
-                              showOneHourVenueStacked ? (
-                                <div className="max-w-full overflow-hidden">
-                                  <div
-                                    className="max-w-full overflow-hidden whitespace-nowrap font-black tracking-[-0.04em]"
-                                    style={{
-                                      color: subjectText,
-                                      fontSize: resolvedCodeSize,
-                                      lineHeight: 1,
-                                      width: "100%",
-                                      transform: `scaleX(${codeFitScaleX})`,
-                                      transformOrigin: "left center",
-                                    }}>
-                                    {block.courseCode}
-                                  </div>
-                                  <div
-                                    className="mt-0.5 max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
-                                    style={{
-                                      color: isDarkOverlay
-                                        ? "rgba(248, 250, 252, 0.9)"
-                                        : "rgba(15, 23, 42, 0.76)",
-                                      fontSize: inlineVenueTextSize,
-                                      lineHeight: 1,
-                                    }}>
-                                    {venueLabel}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div
-                                  className="max-w-full overflow-hidden whitespace-nowrap font-black tracking-[-0.04em]"
-                                  style={{
-                                    color: subjectText,
-                                    fontSize: resolvedCodeSize,
-                                    lineHeight: 1,
-                                    width: "100%",
-                                    transform: `scaleX(${codeFitScaleX})`,
-                                    transformOrigin: "left center",
-                                  }}>
-                                  {block.courseCode}
-                                </div>
-                              )
+                            {(isPreview ? showPreviewCourseCode : settings.showCourseCode) ? (
+                              <div
+                                className="max-w-full overflow-hidden whitespace-nowrap font-black"
+                                style={{
+                                  color: subjectText,
+                                  fontSize: resolvedCodeSize,
+                                  lineHeight: 1,
+                                  width: "100%",
+                                  letterSpacing:
+                                    codeLength >= 8 ? "-0.06em" : "-0.045em",
+                                  transform: `scaleX(${previewCodeFitScaleX})`,
+                                  transformOrigin: isPreview ? "center center" : "left center",
+                                  textAlign: isPreview ? "center" : "left",
+                                }}>
+                                {block.courseCode}
+                              </div>
                             ) : null}
                             {showVenueDetails ? (
                               <div
@@ -775,7 +799,7 @@ export function WallpaperTable({
                                   fontSize: venueTextSize,
                                   lineHeight: 1.12,
                                   display: "-webkit-box",
-                                  WebkitLineClamp: 2,
+                                  WebkitLineClamp: 1,
                                   WebkitBoxOrient: "vertical",
                                 }}>
                                 {venueLabel}
@@ -790,12 +814,15 @@ export function WallpaperTable({
                                 {block.subjectName}
                               </div>
                             ) : null}
-                            {!isCompact &&
-                            settings.showLecturer &&
-                            block.lecturer ? (
+                            {showLecturerDetails ? (
                               <div
                                 className="max-w-full whitespace-normal wrap-break-word text-[5.75px] leading-[1.1] mt-0.5 font-medium"
-                                style={{ color: tableSubtleText }}>
+                                style={{
+                                  color: tableSubtleText,
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: 1,
+                                  WebkitBoxOrient: "vertical",
+                                }}>
                                 {block.lecturer}
                               </div>
                             ) : null}

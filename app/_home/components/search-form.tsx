@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Combobox } from "@/components/ui/combobox";
 import {
   FACULTY_REQUIRED_CAMPUS_CODES,
   FALLBACK_CAMPUSES,
@@ -15,15 +15,17 @@ import {
 import type { ComboboxOption } from "@/components/ui/combobox";
 import type { SearchRequest } from "@/lib/types";
 
-const CAMPUS_OPTIONS: ComboboxOption[] = FALLBACK_CAMPUSES.map((c) => ({
-  ...c,
-  group: SHAH_ALAM_SPECIAL_CAMPUS_CODES.has(c.code) ? "Shah Alam – Course Types" : "Campuses",
+const CAMPUS_OPTIONS: ComboboxOption[] = FALLBACK_CAMPUSES.map((campus) => ({
+  ...campus,
+  group: SHAH_ALAM_SPECIAL_CAMPUS_CODES.has(campus.code)
+    ? "Shah Alam - Course Types"
+    : "Campuses",
 }));
 
-interface SearchFormProps {
+type SearchFormProps = {
   onSubmit: (data: SearchRequest) => void;
   isLoading: boolean;
-}
+};
 
 export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
   const [campus, setCampus] = useState("");
@@ -37,10 +39,9 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
     if (!FACULTY_REQUIRED_CAMPUS_CODES.has(value)) setFaculty("");
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const needsFaculty = FACULTY_REQUIRED_CAMPUS_CODES.has(campus);
-    if (!campus || (needsFaculty && !faculty) || !course.trim()) return;
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!campus || (facultyRequired && !faculty) || !course.trim()) return;
     onSubmit({ campus, faculty, course: course.trim() });
   }
 
@@ -48,10 +49,9 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-      <div className="grid gap-3 sm:gap-4 md:gap-5 grid-cols-1 sm:grid-cols-3">
-        {/* Campus */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4 md:gap-5">
         <div className="space-y-2">
-          <Label htmlFor="campus" className="text-xs sm:text-sm font-medium">
+          <Label htmlFor="campus" className="text-sm font-semibold text-white">
             Campus
           </Label>
           <Combobox
@@ -59,39 +59,42 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
             options={CAMPUS_OPTIONS}
             value={campus}
             onChange={handleCampusChange}
-            placeholder="Select campus…"
+            placeholder="Select campus..."
             className="border-white/20 bg-white/92 text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.08)]"
           />
         </div>
 
-        {/* Faculty — hidden for special course-type campuses */}
         <div className="space-y-2">
-          <Label htmlFor="faculty" className={`text-sm font-medium ${!facultyRequired ? "text-muted-foreground/50" : ""}`}>
+          <Label
+            htmlFor="faculty"
+            className={`text-sm font-semibold ${facultyRequired ? "text-white" : "text-white/72"}`}
+          >
             Faculty
-            {!facultyRequired && (
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground">(not required)</span>
-            )}
+            {!facultyRequired ? (
+              <span className="ml-1.5 text-xs font-medium text-white/62">
+                (not required)
+              </span>
+            ) : null}
           </Label>
           <Combobox
             id="faculty"
             options={FALLBACK_FACULTIES}
             value={faculty}
             onChange={setFaculty}
-            placeholder={facultyRequired ? "Select faculty…" : "N/A for this campus"}
+            placeholder={facultyRequired ? "Select faculty..." : "N/A for this campus"}
             disabled={!facultyRequired}
             className="border-white/20 bg-white/92 text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.08)]"
           />
         </div>
 
-        {/* Course */}
         <div className="space-y-2">
-          <Label htmlFor="course" className="text-sm font-medium">
+          <Label htmlFor="course" className="text-sm font-semibold text-white">
             Course Code
           </Label>
           <Input
             id="course"
             value={course}
-            onChange={(e) => setCourse(e.target.value.toUpperCase())}
+            onChange={(event) => setCourse(event.target.value.toUpperCase())}
             placeholder="e.g. CSC669"
             maxLength={10}
             className="border-white/20 bg-white/92 font-mono uppercase text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.08)] placeholder:text-slate-400"
@@ -108,7 +111,7 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Fetching timetable…
+            Fetching timetable...
           </>
         ) : (
           <>
