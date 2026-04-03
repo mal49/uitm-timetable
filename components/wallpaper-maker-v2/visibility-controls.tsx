@@ -7,6 +7,7 @@ import {
   Clock3,
   Eye,
   MapPin,
+  User,
 } from "lucide-react";
 import { useWallpaper } from "./wallpaper-context";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ type VisibilityKey =
   | "showCourseCode"
   | "showTime"
   | "showVenue"
+  | "showLecturer"
   | "showDayLabels"
   | "showWidgetPosition"
   | "showTimeIndicators";
@@ -42,6 +44,12 @@ const visibilityItems: Array<{
     label: "Venue",
     description: "Show room or online venue.",
     icon: MapPin,
+  },
+  {
+    key: "showLecturer",
+    label: "Lecturer",
+    description: "Show lecturer name on cards.",
+    icon: User,
   },
   {
     key: "showDayLabels",

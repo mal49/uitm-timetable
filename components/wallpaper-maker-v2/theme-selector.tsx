@@ -108,10 +108,10 @@ export function ThemeSelector() {
   function handleCustomColorChange(color: ColorResult) {
     const nextColor = color.hex.toUpperCase();
     setPickerColor(nextColor);
-
-    if (settings.themeId !== "custom") {
-      updateSettings({ themeId: "custom" });
-    }
+    updateSettings({
+      themeId: "custom",
+      customBackground: nextColor,
+    });
   }
 
   function handleCustomColorChangeComplete(color: ColorResult) {

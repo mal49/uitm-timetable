@@ -27,6 +27,14 @@ function timeToHour(time: string): number {
   return h ?? 0;
 }
 
+function formatTimeLabel(start?: string, end?: string): string {
+  const safeStart = start?.slice(0, 5) ?? "";
+  const safeEnd = end?.slice(0, 5) ?? "";
+  if (!safeStart && !safeEnd) return "";
+  if (!safeEnd) return safeStart;
+  return `${safeStart}-${safeEnd}`;
+}
+
 export function MiniGrid({ entries, colorOverrides }: MiniGridProps) {
   const { settings } = useWallpaper();
 
@@ -116,11 +124,16 @@ export function MiniGrid({ entries, colorOverrides }: MiniGridProps) {
                       >
                         {courseCode}
                       </div>
-                      {settings.showTime && (
-                        <div className="text-[7px] text-slate-600 leading-tight mt-0.5">
-                          {entry.start?.slice(0, 5)}
+                      {settings.showTime ? (
+                        <div className="text-[7px] text-slate-600 leading-tight mt-0.5 text-center">
+                          {formatTimeLabel(entry.start, entry.end)}
                         </div>
-                      )}
+                      ) : null}
+                      {settings.showVenue && entry.venue ? (
+                        <div className="text-[6.5px] text-slate-500 leading-tight mt-0.5 text-center max-w-full truncate">
+                          {entry.venue}
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}

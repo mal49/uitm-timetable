@@ -17,7 +17,9 @@ import type { SearchRequest } from "@/lib/types";
 
 const CAMPUS_OPTIONS: ComboboxOption[] = FALLBACK_CAMPUSES.map((c) => ({
   ...c,
-  group: SHAH_ALAM_SPECIAL_CAMPUS_CODES.has(c.code) ? "Shah Alam – Course Types" : "Campuses",
+  group: SHAH_ALAM_SPECIAL_CAMPUS_CODES.has(c.code)
+    ? "Shah Alam – Course Types"
+    : "Campuses",
 }));
 
 interface SearchFormProps {
@@ -66,10 +68,14 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
 
         {/* Faculty — hidden for special course-type campuses */}
         <div className="space-y-2">
-          <Label htmlFor="faculty" className={`text-sm font-medium ${!facultyRequired ? "text-muted-foreground/50" : ""}`}>
+          <Label
+            htmlFor="faculty"
+            className={`text-sm font-medium ${!facultyRequired ? "text-white" : ""}`}>
             Faculty
             {!facultyRequired && (
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground">(not required)</span>
+              <span className="ml-1.5 text-xs font-normal text-white/50">
+                (not required)
+              </span>
             )}
           </Label>
           <Combobox
@@ -77,7 +83,9 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
             options={FALLBACK_FACULTIES}
             value={faculty}
             onChange={setFaculty}
-            placeholder={facultyRequired ? "Select faculty…" : "N/A for this campus"}
+            placeholder={
+              facultyRequired ? "Select faculty…" : "N/A for this campus"
+            }
             disabled={!facultyRequired}
             className="border-white/20 bg-white/92 text-slate-900 shadow-[0_10px_20px_rgba(15,23,42,0.08)]"
           />
@@ -86,7 +94,7 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
         {/* Course */}
         <div className="space-y-2">
           <Label htmlFor="course" className="text-sm font-medium">
-            Course Code
+            Subject
           </Label>
           <Input
             id="course"
@@ -103,8 +111,7 @@ export function SearchForm({ onSubmit, isLoading }: SearchFormProps) {
       <Button
         type="submit"
         disabled={isLoading || !canSubmit}
-        className="w-full gap-2 rounded-full border-0 bg-[#21d4cf] font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.24)] hover:bg-[#3fe1dc] sm:w-auto"
-      >
+        className="w-full gap-2 rounded-full border-0 bg-[#21d4cf] font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.24)] hover:bg-[#3fe1dc] sm:w-auto">
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
