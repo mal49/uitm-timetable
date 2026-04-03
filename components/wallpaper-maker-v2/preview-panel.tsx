@@ -3,7 +3,16 @@
 import { useRef, useState } from "react";
 import { toBlob } from "html-to-image";
 import Image from "next/image";
-import { Smartphone, Download, Bolt, Camera, Wifi, BatteryFull, Signal, CalendarDays } from "lucide-react";
+import {
+  Smartphone,
+  Download,
+  Bolt,
+  Camera,
+  Wifi,
+  BatteryFull,
+  Signal,
+  CalendarDays,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWallpaper } from "./wallpaper-context";
 import { getThemePreset } from "./themes/theme-presets";
@@ -55,9 +64,12 @@ export function PreviewPanel() {
   const lockTime = formatLockscreenTime(now);
 
   // Render the selected layout
-  const renderLayout = (layoutStyle: LayoutStyle, renderMode: "preview" | "export") => {
+  const renderLayout = (
+    layoutStyle: LayoutStyle,
+    renderMode: "preview" | "export",
+  ) => {
     const props = { entries, colorOverrides };
-    
+
     switch (layoutStyle) {
       case "compact-list":
         return <CompactList {...props} />;
@@ -83,10 +95,13 @@ export function PreviewPanel() {
     bold: 700,
   };
   const lockscreenTextColor = theme.lockscreenTextColor ?? "#ffffff";
-  const lockscreenTitleColor = theme.lockscreenTitleColor ?? lockscreenTextColor;
+  const lockscreenTitleColor =
+    theme.lockscreenTitleColor ?? lockscreenTextColor;
   const widgetTextColor = lockscreenTextColor;
   const widgetBorderColor =
-    widgetTextColor === "#0F172A" ? "rgba(15,23,42,0.14)" : "rgba(255,255,255,0.24)";
+    widgetTextColor === "#0F172A"
+      ? "rgba(15,23,42,0.14)"
+      : "rgba(255,255,255,0.24)";
   const exportSize = PORTRAIT_EXPORT_SIZE;
 
   async function handleExport() {
@@ -105,11 +120,12 @@ export function PreviewPanel() {
         cacheBust: true,
         // Prevent html-to-image font embedding crash when a stylesheet font entry is undefined.
         skipFonts: true,
-        type:
-          settings.exportFormat === "jpeg" ? "image/jpeg" : "image/png",
+        type: settings.exportFormat === "jpeg" ? "image/jpeg" : "image/png",
       };
 
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
       const blob = await toBlob(exportRef.current, exportOptions);
       if (!blob) {
         throw new Error("Failed to render wallpaper image.");
@@ -141,8 +157,7 @@ export function PreviewPanel() {
         background: theme.background,
         fontSize: `${settings.fontSize}em`,
         fontWeight: fontWeightMap[settings.fontWeight],
-      }}
-    >
+      }}>
       <div
         className="h-full w-full overflow-hidden"
         style={{
@@ -151,8 +166,7 @@ export function PreviewPanel() {
             ? PORTRAIT_TOP_PADDING_WITH_WIDGET
             : PORTRAIT_TOP_PADDING,
           paddingBottom: PORTRAIT_BOTTOM_PADDING,
-        }}
-      >
+        }}>
         {renderLayout(settings.layoutStyle, "export")}
       </div>
     </div>
@@ -166,7 +180,7 @@ export function PreviewPanel() {
           <Smartphone className="h-4 w-4 text-slate-500" />
           <h3 className="text-sm font-semibold text-slate-900">Preview</h3>
         </div>
-        
+
         <div className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
           Portrait
         </div>
@@ -177,7 +191,7 @@ export function PreviewPanel() {
         <div className="h-full flex items-center justify-center">
           {/* Device Mockup Container */}
           <div className="relative">
-            <div className="relative w-full max-w-[392px] mx-auto">
+            <div className="relative w-full max-w-98 mx-auto">
               <Image
                 src="/misc/apple-iphone-15-black-portrait.png"
                 alt="iPhone Frame"
@@ -195,8 +209,7 @@ export function PreviewPanel() {
                   overflow: "hidden",
                   borderRadius: "42px",
                   clipPath: "inset(0 round 42px)",
-                }}
-              >
+                }}>
                 <div
                   className="w-full h-full relative overflow-hidden"
                   style={{
@@ -205,8 +218,7 @@ export function PreviewPanel() {
                     fontWeight: fontWeightMap[settings.fontWeight],
                     borderRadius: "42px",
                     clipPath: "inset(0 round 42px)",
-                  }}
-                >
+                  }}>
                   <div
                     className="absolute inset-0 overflow-hidden"
                     style={{
@@ -215,8 +227,7 @@ export function PreviewPanel() {
                       fontWeight: fontWeightMap[settings.fontWeight],
                       borderRadius: "42px",
                       clipPath: "inset(0 round 42px)",
-                    }}
-                  >
+                    }}>
                     <div
                       className="h-full w-full overflow-hidden"
                       style={{
@@ -225,8 +236,7 @@ export function PreviewPanel() {
                           ? PORTRAIT_TOP_PADDING_WITH_WIDGET
                           : PORTRAIT_TOP_PADDING,
                         paddingBottom: PORTRAIT_BOTTOM_PADDING,
-                      }}
-                    >
+                      }}>
                       {renderLayout(settings.layoutStyle, "preview")}
                     </div>
                   </div>
@@ -234,43 +244,45 @@ export function PreviewPanel() {
                   <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-6 pt-7">
                     <div
                       className="flex items-center justify-between text-[10px] font-medium tracking-[0.02em]"
-                      style={{ color: lockscreenTextColor }}
-                    >
+                      style={{ color: lockscreenTextColor }}>
                       <span>Fido</span>
                       <div className="flex items-center gap-1.5 opacity-90">
                         <Signal className="h-3 w-3" strokeWidth={2.2} />
                         <Wifi className="h-3 w-3" strokeWidth={2.2} />
-                        <BatteryFull className="h-3.5 w-3.5" strokeWidth={2.2} />
+                        <BatteryFull
+                          className="h-3.5 w-3.5"
+                          strokeWidth={2.2}
+                        />
                       </div>
                     </div>
                   </div>
 
-                  <div className="pointer-events-none absolute inset-x-0 top-[98px] z-20 text-center">
+                  <div className="pointer-events-none absolute inset-x-0 top-24.5 z-20 text-center">
                     <p
                       className="text-[13px] font-medium tracking-[0.01em] opacity-90"
-                      style={{ color: lockscreenTitleColor }}
-                    >
+                      style={{ color: lockscreenTitleColor }}>
                       {lockDate}
                     </p>
                     <p
                       className="mt-1 text-[60px] font-semibold leading-none tracking-[-0.06em]"
-                      style={{ color: lockscreenTextColor }}
-                    >
+                      style={{ color: lockscreenTextColor }}>
                       {lockTime}
                     </p>
                   </div>
 
                   {settings.showWidgetPosition ? (
-                    <div className="pointer-events-none absolute inset-x-0 top-[192px] z-20 flex justify-center">
+                    <div className="pointer-events-none absolute inset-x-0 top-48 z-20 flex justify-center">
                       <div
                         className="flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.10)] backdrop-blur-sm"
                         style={{
                           color: widgetTextColor,
                           background: "rgba(255,255,255,0.42)",
                           borderColor: widgetBorderColor,
-                        }}
-                      >
-                        <CalendarDays className="h-3.5 w-3.5" strokeWidth={2.1} />
+                        }}>
+                        <CalendarDays
+                          className="h-3.5 w-3.5"
+                          strokeWidth={2.1}
+                        />
                         <span className="text-[11px] font-semibold tracking-[0.01em]">
                           Widget Position
                         </span>
@@ -290,7 +302,6 @@ export function PreviewPanel() {
                   <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center">
                     <div className="h-1.5 w-28 rounded-full bg-white/85" />
                   </div>
-
                 </div>
               </div>
             </div>
@@ -305,7 +316,9 @@ export function PreviewPanel() {
         </div>
       </div>
 
-      <div aria-hidden="true" className="fixed -left-[9999px] top-0 pointer-events-none opacity-0">
+      <div
+        aria-hidden="true"
+        className="fixed -left-2499.75 top-0 pointer-events-none opacity-0">
         <div ref={exportRef}>{wallpaperScene}</div>
       </div>
 
@@ -321,8 +334,7 @@ export function PreviewPanel() {
           className="relative z-30 w-full rounded-full border-0 bg-[#21d4cf] font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.24)] hover:bg-[#3fe1dc]"
           size="lg"
           onClick={handleExport}
-          disabled={isExporting}
-        >
+          disabled={isExporting}>
           <Download className="h-4 w-4 mr-2" />
           {isExporting ? "Exporting..." : "Export Wallpaper"}
         </Button>

@@ -1,7 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { Roboto } from "next/font/google";
 import { VercelAnalytics } from "@/components/vercel-analytics";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "900"],
+  display: "swap",
+  variable: "--font-roboto",
+});
 
 export const metadata: Metadata = {
   title: "UiTM Schedule",
@@ -46,7 +54,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${roboto.variable} ${roboto.className}`}
+    >
       <body className="min-h-screen bg-background text-foreground antialiased font-sans">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
