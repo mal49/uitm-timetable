@@ -16,8 +16,8 @@ export function SiteFooter() {
                 </p>
               </div>
               <p className="max-w-xl text-sm leading-6 text-white/65">
-                Search your classes, lock in the right group combo, and export a
-                schedule wallpaper that actually looks good.
+                Search your classes, choose your groups, and export a schedule
+                wallpaper that actually looks good.
               </p>
             </div>
 
@@ -27,13 +27,14 @@ export function SiteFooter() {
               </p>
               <p className="text-xs leading-5 text-white/60 sm:text-sm">
                 Timetable data is referenced from the UiTM scheduling portal and
-                MyStudent.
+                MyStudent imports.
               </p>
               <a
                 href="https://simsweb4.uitm.edu.my"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-white transition-colors hover:text-[#7df4c3] sm:justify-end">
+                className="inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-white transition-colors hover:text-[#7df4c3] sm:justify-end"
+              >
                 <span className="truncate">simsweb4.uitm.edu.my</span>
                 <ExternalLink className="h-3.5 w-3.5 shrink-0" />
               </a>
