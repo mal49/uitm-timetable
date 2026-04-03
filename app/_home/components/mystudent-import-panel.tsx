@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, IdCard, Loader2, TriangleAlert } from "lucide-react";
+import { ArrowRight, History, IdCard, Loader2, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,6 +19,10 @@ type MyStudentImportPanelProps = {
 
 export function MyStudentImportPanel({
   onConfirmImport,
+  hasSavedImport,
+  savedImportLabel,
+  onRestoreSavedImport,
+  onClearSavedImport,
 }: MyStudentImportPanelProps) {
   const [studentId, setStudentId] = useState("");
   const [fetchingStudentId, setFetchingStudentId] = useState(false);
@@ -64,22 +68,57 @@ export function MyStudentImportPanel({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-[1.55rem] border border-white/20 bg-[linear-gradient(145deg,rgba(246,240,255,0.92),rgba(226,214,247,0.9),rgba(239,232,251,0.9))] p-4 shadow-[0_16px_36px_rgba(57,33,92,0.16)] backdrop-blur-md sm:p-4.5">
+    <div className="relative overflow-hidden rounded-[1.4rem] border border-white/20 bg-[linear-gradient(145deg,rgba(246,240,255,0.92),rgba(226,214,247,0.9),rgba(239,232,251,0.9))] p-3.5 shadow-[0_16px_36px_rgba(57,33,92,0.16)] backdrop-blur-md sm:p-4">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(125,244,195,0.12),transparent_22%),radial-gradient(circle_at_top_left,rgba(255,255,255,0.28),transparent_26%),radial-gradient(circle_at_bottom,rgba(84,49,128,0.1),transparent_38%)]" />
 
-      <div className="relative flex flex-col gap-3.5">
-        <div className="max-w-2xl space-y-2 animate-[fade-in_500ms_ease-out]">
-          <div className="space-y-2">
-            <h3 className="text-[1.55rem] font-bold tracking-[-0.045em] text-[#241232] sm:text-[1.85rem]">
+      <div className="relative flex flex-col gap-3">
+        <div className="max-w-2xl space-y-1.5 animate-[fade-in_500ms_ease-out]">
+          <div className="space-y-1.5">
+            <h3 className="text-[1.3rem] font-bold tracking-[-0.04em] text-[#241232] sm:text-[1.55rem]">
               Import with student ID.
             </h3>
-            <p className="max-w-xl text-sm leading-6 text-[#5d4f6d] sm:text-[14px]">
+            <p className="max-w-xl text-sm leading-5 text-[#5d4f6d]">
               Recommended. The timetable loads directly from MyStudent.
             </p>
           </div>
         </div>
 
-        <div className="rounded-[1.35rem] border border-white/35 bg-[linear-gradient(145deg,rgba(255,255,255,0.92),rgba(245,240,252,0.86))] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_10px_24px_rgba(50,24,84,0.08)] animate-[fade-in_700ms_ease-out] backdrop-blur-sm sm:p-4">
+        {hasSavedImport ? (
+          <div className="flex flex-col gap-3 rounded-[1.15rem] border border-[#d7caea] bg-white/80 px-3.5 py-3 text-[#433258] shadow-[0_10px_24px_rgba(50,24,84,0.06)] sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a6890]">
+                <History className="h-3.5 w-3.5" />
+                Saved Import
+              </div>
+              <p className="mt-1 text-sm leading-5 text-[#5d4f6d]">
+                {savedImportLabel ?? "A previous MyStudent import is available."}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={onRestoreSavedImport}
+                className="h-9 rounded-full border-0 bg-[#21d4cf] px-4 text-xs font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.18)] hover:bg-[#3fe1dc]"
+              >
+                Restore
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onClearSavedImport}
+                className="h-9 rounded-full px-3 text-[#6d5a83] hover:bg-white/70 hover:text-[#241232]"
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Clear
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="rounded-[1.2rem] border border-white/35 bg-[linear-gradient(145deg,rgba(255,255,255,0.92),rgba(245,240,252,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_10px_24px_rgba(50,24,84,0.08)] animate-[fade-in_700ms_ease-out] backdrop-blur-sm sm:p-3.5">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7a6890]">
               Student ID
@@ -89,7 +128,7 @@ export function MyStudentImportPanel({
             </span>
           </div>
 
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-2.5 flex flex-col gap-2.5 sm:flex-row">
             <div className="relative flex-1">
               <IdCard className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8f83a3]" />
               <Input
@@ -100,7 +139,7 @@ export function MyStudentImportPanel({
                 }}
                 inputMode="numeric"
                 placeholder="e.g. 2023456789"
-                className="h-12 rounded-[1rem] border-[#ddd2ef] bg-white pl-11 text-[15px] text-[#27183a] placeholder:text-[#9788ab] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus-visible:ring-[#21d4cf]/35"
+                className="h-11 rounded-[0.95rem] border-[#ddd2ef] bg-white pl-11 text-[15px] text-[#27183a] placeholder:text-[#9788ab] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus-visible:ring-[#21d4cf]/35"
               />
             </div>
 
@@ -108,7 +147,8 @@ export function MyStudentImportPanel({
               type="button"
               onClick={handleFetchFromStudentId}
               disabled={fetchingStudentId}
-              className="h-12 rounded-[1rem] border-0 bg-[linear-gradient(135deg,#22d3c5,#16a89e)] px-4 text-sm font-semibold text-[#08211f] shadow-[0_12px_24px_rgba(33,212,207,0.18)] transition-transform duration-200 hover:scale-[1.02] hover:bg-[linear-gradient(135deg,#1dc4b7,#139187)]">
+              className="h-11 rounded-[0.95rem] border-0 bg-[linear-gradient(135deg,#22d3c5,#16a89e)] px-4 text-sm font-semibold text-[#08211f] shadow-[0_12px_24px_rgba(33,212,207,0.18)] transition-transform duration-200 hover:scale-[1.02] hover:bg-[linear-gradient(135deg,#1dc4b7,#139187)]"
+            >
               {fetchingStudentId ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -118,7 +158,7 @@ export function MyStudentImportPanel({
             </Button>
           </div>
 
-          <p className="mt-3 text-xs leading-5 text-[#665878]">
+          <p className="mt-2.5 text-xs leading-5 text-[#665878]">
             Use your student ID only.
           </p>
 

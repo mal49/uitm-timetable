@@ -1,53 +1,60 @@
 # UiTM Schedule
 
 <p align="center">
-  <img src="./public/social-preview.jpg" alt="UiTM Schedule header preview" width="100%" />
+  <img src="./public/social-preview.jpg" alt="UiTM Schedule preview" width="100%" />
 </p>
 
 <p align="center">
-  Search UiTM class schedules, compare groups, detect clashes, and turn the final timetable into a phone wallpaper.
+  Build a UiTM class schedule, check clashes, and export it as a wallpaper-ready image.
 </p>
 
 <p align="center">
   <a href="https://uitm-timetable.vercel.app/">Live Site</a>
   ·
-  <a href="#tech-stack">Tech Stack</a>
+  <a href="#features">Features</a>
   ·
-  <a href="#contributing">Contributing</a>
+  <a href="#running-locally">Running Locally</a>
 </p>
 
-## What Is This?
+## Overview
 
-`UiTM Schedule` is a web app for UiTM students who want a cleaner way to work with their class timetable.
+UiTM Schedule is a Next.js app for students who want a cleaner way to turn timetable data into something usable.
 
-Instead of jumping between SIMS pages and screenshots, the site lets users:
+The app currently supports two input paths:
 
-- search for a subject by campus, faculty, and course code
-- fetch matching timetable entries from the UiTM timetable portal
-- choose the correct group for each subject
-- spot schedule clashes across selected groups
-- preview the final timetable in multiple layouts
-- export the result as a polished wallpaper image for mobile use
+- `MyStudent` import by student ID
+- manual subject search by campus, faculty, and course code
 
-The app is built around one core idea: make timetable planning fast, visual, and easy to keep on your lock screen.
-
-## How It Works
-
-1. The user selects a campus, faculty when required, and a course code.
-2. The app queries the UiTM timetable portal and returns matching subject results.
-3. The user picks the relevant subject and group combination.
-4. The app combines the selected sessions, highlights clashes, and renders timetable views.
-5. The wallpaper maker exports the final schedule as a JPG image.
+From there, users can choose subject matches, select groups, review clashes, preview the combined timetable, and export a wallpaper-style version.
 
 ## Features
 
-- Subject search flow tailored to UiTM timetable data
-- Group selection across multiple subjects
-- Clash detection for overlapping classes
-- Weekly grid and list/table timetable views
-- Wallpaper generator with multiple layout presets
-- Image export for phone wallpapers
-- Responsive UI built for desktop and mobile
+- MyStudent timetable import by student ID
+- Manual UiTM subject lookup by campus, faculty, and course code
+- Multiple subject match selection when a search returns more than one result
+- Group selection per subject
+- Clash detection across selected timetable entries
+- Desktop timetable preview in grid and table views
+- Wallpaper maker with customizable layouts and export settings
+- JPG export for the combined timetable preview
+- Responsive UI for desktop and mobile
+
+## Data Sources
+
+Timetable data in this project comes from:
+
+- the UiTM scheduling portal
+- MyStudent timetable imports
+
+This is an unofficial student tool and is not affiliated with UiTM.
+
+## Current User Flow
+
+1. Import classes from MyStudent or open the manual search accordion.
+2. Add subjects and choose the correct match when needed.
+3. Pick a group for each subject.
+4. Review clashes in the combined timetable.
+5. Export the timetable or build a wallpaper version from the final schedule.
 
 ## Tech Stack
 
@@ -55,27 +62,28 @@ The app is built around one core idea: make timetable planning fast, visual, and
 | --- | --- |
 | Framework | Next.js 16, React 19, TypeScript |
 | Styling | Tailwind CSS 4 |
-| UI | shadcn/ui, Base UI, Lucide icons |
-| Data fetching | Native `fetch`, Axios |
-| Scraping/parsing | Cheerio, Axios, Tough Cookie support |
-| Image export | `html-to-image` |
+| UI | shadcn/ui, Base UI, Lucide React |
+| Networking | Native `fetch`, Axios |
+| Parsing/Scraping | Cheerio, Tough Cookie, Axios Cookie Jar Support |
+| Export | `html-to-image` |
 | Analytics | Vercel Analytics |
 | Deployment | Vercel |
 
 ## Project Structure
 
 ```text
-app/                  App routes, pages, and API endpoints
-components/           UI pieces, timetable views, wallpaper maker
-lib/                  Scraper logic, constants, types, utilities
-public/               Static assets and social preview image
+app/                         App routes, API routes, layout, and home page
+app/_home/                   Home page state, components, and timetable workflow
+components/                  Shared UI and wallpaper maker components
+lib/                         Scraper, constants, importers, presets, and shared types
+public/                      Static assets
 ```
 
 ## Running Locally
 
 ### Prerequisites
 
-- Node.js 20+ recommended
+- Node.js 20+
 - npm
 
 ### Setup
@@ -85,7 +93,7 @@ npm install
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
+Open `http://localhost:3000`.
 
 ### Available Scripts
 
@@ -96,44 +104,42 @@ npm run start
 npm run lint
 ```
 
+## API Endpoints
+
+The app currently exposes these server routes:
+
+- `GET /api/campuses`
+- `GET /api/faculties`
+- `GET /api/mystudent`
+- `POST /api/search`
+- `POST /api/subjects`
+- `POST /api/timetable`
+
+## Development Notes
+
+- Main home page UI lives in [`app/_home/home-page.tsx`](./app/_home/home-page.tsx).
+- Home page state and actions live in [`app/_home/use-home-page.ts`](./app/_home/use-home-page.ts).
+- MyStudent parsing logic lives in [`lib/importers/mystudent.ts`](./lib/importers/mystudent.ts).
+- UiTM scraping logic lives in [`lib/scraper.ts`](./lib/scraper.ts).
+- Wallpaper editing and export UI lives under [`components/wallpaper-maker-v2/`](./components/wallpaper-maker-v2/).
+- If UiTM or MyStudent change their payload or markup, scraper/import fixes will likely be required.
+
 ## Contributing
 
-Contributions are welcome, especially around timetable accuracy, UI polish, export quality, and scraper resilience.
+Contributions are useful if they improve:
 
-### Contribution Workflow
+- timetable accuracy
+- scraper resilience
+- mobile usability
+- export quality
+- UI clarity
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Make your changes.
-4. Run linting and any relevant local checks.
-5. Open a pull request with a clear description of the problem and solution.
+Before opening a PR:
 
-### Recommended Branch Naming
-
-```text
-feature/short-description
-fix/short-description
-docs/short-description
-```
-
-### Pull Request Guidelines
-
-- Keep changes focused and scoped
-- Explain any UI or behavior changes clearly
-- Include screenshots or recordings for visual updates when possible
-- Mention scraper-related assumptions if the UiTM source markup changed
-- Avoid unrelated refactors in the same PR
-
-### Development Notes
-
-- API routes under `app/api/*` handle timetable lookup and search requests.
-- Scraper logic lives in `lib/scraper.ts`.
-- Wallpaper generation UI is under `components/wallpaper-maker-v2/`.
-- If UiTM changes its timetable markup or request flow, scraper fixes will likely be needed.
-
-## Why This Project Exists
-
-UiTM students often rely on static screenshots or repeated SIMS checks to keep track of class schedules. This project turns that process into a faster workflow: fetch, compare, customize, export.
+1. Keep the change scoped.
+2. Run `npm run lint`.
+3. Include screenshots for visual changes when relevant.
+4. Note any assumptions about upstream UiTM or MyStudent data changes.
 
 ## Live Demo
 
