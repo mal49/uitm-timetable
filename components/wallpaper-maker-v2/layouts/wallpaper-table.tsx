@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { TimetableEntry } from "@/lib/types";
 import { useWallpaper } from "../wallpaper-context";
 import { getThemePreset } from "../themes/theme-presets";
@@ -17,6 +17,118 @@ const MAX_VISIBLE_HOUR = 22;
 const MIN_HOUR_SPAN = 8;
 const POSITION_SLOT_MINUTES = 30;
 const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
+const PREVIEW_SHOW_DAY_LABELS = true;
+const PREVIEW_SHOW_TIME_INDICATORS = true;
+
+type DensityConfig = {
+  outerPaddingX: string;
+  outerPaddingTop: string;
+  outerPaddingBottom: string;
+  boardWidth: string;
+  boardHeight: string;
+  titleHeightPx: number;
+  titleSize: string;
+  headerRowHeight: string;
+  dayLabelSize: string;
+  timeColumnWidth: string;
+  timeLabelSize: string;
+  minCardHeight: string;
+  cardPaddingX: string;
+  cardPaddingY: string;
+  codeTight: string;
+  codeNormal: string;
+  venueTight: string;
+  venueNormal: string;
+  timeTight: string;
+  timeNormal: string;
+};
+
+const DENSITY_PRESETS: Record<string, Omit<DensityConfig, "timeColumnWidth">> = {
+  "ultra-compact": {
+    outerPaddingX: "8px",
+    outerPaddingTop: "4px",
+    outerPaddingBottom: "2px",
+    boardWidth: "96%",
+    boardHeight: "95%",
+    titleHeightPx: 32,
+    titleSize: "12px",
+    headerRowHeight: "22px",
+    dayLabelSize: "9px",
+    timeLabelSize: "5.5px",
+    minCardHeight: "34px",
+    cardPaddingX: "4px",
+    cardPaddingY: "4px",
+    codeTight: "6.8px",
+    codeNormal: "8px",
+    venueTight: "4.8px",
+    venueNormal: "5.8px",
+    timeTight: "4.7px",
+    timeNormal: "5.4px",
+  },
+  compact: {
+    outerPaddingX: "12px",
+    outerPaddingTop: "4px",
+    outerPaddingBottom: "2px",
+    boardWidth: "94%",
+    boardHeight: "93%",
+    titleHeightPx: 36,
+    titleSize: "13px",
+    headerRowHeight: "24px",
+    dayLabelSize: "10px",
+    timeLabelSize: "6px",
+    minCardHeight: "38px",
+    cardPaddingX: "6px",
+    cardPaddingY: "6px",
+    codeTight: "6.6px",
+    codeNormal: "8.2px",
+    venueTight: "5.2px",
+    venueNormal: "6.2px",
+    timeTight: "5px",
+    timeNormal: "5.8px",
+  },
+  comfortable: {
+    outerPaddingX: "14px",
+    outerPaddingTop: "6px",
+    outerPaddingBottom: "4px",
+    boardWidth: "92%",
+    boardHeight: "90%",
+    titleHeightPx: 38,
+    titleSize: "13px",
+    headerRowHeight: "26px",
+    dayLabelSize: "10px",
+    timeLabelSize: "6.2px",
+    minCardHeight: "42px",
+    cardPaddingX: "7px",
+    cardPaddingY: "7px",
+    codeTight: "7px",
+    codeNormal: "8.6px",
+    venueTight: "5.5px",
+    venueNormal: "6.5px",
+    timeTight: "5.2px",
+    timeNormal: "6px",
+  },
+  spacious: {
+    outerPaddingX: "16px",
+    outerPaddingTop: "8px",
+    outerPaddingBottom: "6px",
+    boardWidth: "90%",
+    boardHeight: "87%",
+    titleHeightPx: 40,
+    titleSize: "14px",
+    headerRowHeight: "28px",
+    dayLabelSize: "10.5px",
+    timeLabelSize: "6.4px",
+    minCardHeight: "46px",
+    cardPaddingX: "8px",
+    cardPaddingY: "8px",
+    codeTight: "7.4px",
+    codeNormal: "9px",
+    venueTight: "5.8px",
+    venueNormal: "6.8px",
+    timeTight: "5.4px",
+    timeNormal: "6.2px",
+  },
+};
 
 function getDayIndex(day: string): number {
   const value = day.trim().toLowerCase();
@@ -96,6 +208,99 @@ function getExportDetailFontSize(
   );
   const scale = matchedThreshold?.scale ?? thresholds[thresholds.length - 1]?.scale ?? 1;
   return `${(baseSizePx * scale).toFixed(2)}px`;
+}
+
+function getTimeColumnWidth(showTimeIndicators: boolean, density: string): string {
+  if (!showTimeIndicators) return "0px";
+
+  const widthByDensity: Record<string, string> = {
+    "ultra-compact": "24px",
+    compact: "28px",
+    comfortable: "30px",
+    spacious: "32px",
+  };
+
+  return widthByDensity[density] ?? widthByDensity.compact;
+}
+
+function getDensityConfig(
+  density: string,
+  isPortrait: boolean,
+  showTimeIndicators: boolean,
+): DensityConfig {
+  const base = DENSITY_PRESETS[density] ?? DENSITY_PRESETS.compact;
+  const timeColumnWidth = getTimeColumnWidth(showTimeIndicators, density);
+
+  return {
+    ...base,
+    timeColumnWidth: isPortrait
+      ? showTimeIndicators
+        ? `${Math.max(22, Number.parseFloat(timeColumnWidth) - 4)}px`
+        : "0px"
+      : timeColumnWidth,
+    outerPaddingX: isPortrait
+      ? `${Math.max(8, Number.parseFloat(base.outerPaddingX) - 2)}px`
+      : base.outerPaddingX,
+    boardWidth: isPortrait ? "93%" : base.boardWidth,
+    boardHeight: isPortrait ? "85%" : base.boardHeight,
+    titleHeightPx: isPortrait
+      ? Math.max(30, base.titleHeightPx - 2)
+      : base.titleHeightPx,
+    titleSize: isPortrait
+      ? `${Math.max(11.5, Number.parseFloat(base.titleSize) - 1)}px`
+      : base.titleSize,
+    headerRowHeight: isPortrait
+      ? `${Math.max(20, Number.parseFloat(base.headerRowHeight) - 2)}px`
+      : base.headerRowHeight,
+    dayLabelSize: isPortrait
+      ? `${Math.max(8.5, Number.parseFloat(base.dayLabelSize) - 1)}px`
+      : base.dayLabelSize,
+    minCardHeight: isPortrait
+      ? `${Math.max(34, Number.parseFloat(base.minCardHeight) - 4)}px`
+      : base.minCardHeight,
+    cardPaddingX: isPortrait
+      ? `${Math.max(4, Number.parseFloat(base.cardPaddingX) - 1)}px`
+      : base.cardPaddingX,
+    cardPaddingY: isPortrait
+      ? `${Math.max(4, Number.parseFloat(base.cardPaddingY) - 1)}px`
+      : base.cardPaddingY,
+    codeTight: isPortrait
+      ? `${Math.max(5.8, Number.parseFloat(base.codeTight) - 0.8)}px`
+      : base.codeTight,
+    codeNormal: isPortrait
+      ? `${Math.max(7.2, Number.parseFloat(base.codeNormal) - 0.8)}px`
+      : base.codeNormal,
+    venueTight: isPortrait
+      ? `${Math.max(4.8, Number.parseFloat(base.venueTight) - 0.4)}px`
+      : base.venueTight,
+    venueNormal: isPortrait
+      ? `${Math.max(5.6, Number.parseFloat(base.venueNormal) - 0.4)}px`
+      : base.venueNormal,
+    timeTight: isPortrait
+      ? `${Math.max(4.6, Number.parseFloat(base.timeTight) - 0.3)}px`
+      : base.timeTight,
+    timeNormal: isPortrait
+      ? `${Math.max(5.2, Number.parseFloat(base.timeNormal) - 0.3)}px`
+      : base.timeNormal,
+  };
+}
+
+function getBlockDetailStyle(
+  fontSize: string,
+  isExportMode: boolean,
+  color: string,
+): CSSProperties {
+  return {
+    color,
+    fontSize,
+    lineHeight: isExportMode ? 1.1 : 1.12,
+    textAlign: "center",
+    width: "100%",
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
 }
 
 type TableBlock = {
@@ -192,9 +397,11 @@ export function WallpaperTable({
   const { settings } = useWallpaper();
   const isPreview = renderMode === "preview";
   const [isMobileViewport, setIsMobileViewport] = useState(false);
-  const showPreviewDayLabels = true;
-  const showPreviewTimeIndicators = true;
   const theme = getThemePreset(settings.themeId, settings.customBackground);
+  const showDayLabels = isPreview ? PREVIEW_SHOW_DAY_LABELS : settings.showDayLabels;
+  const showTimeIndicators = isPreview
+    ? PREVIEW_SHOW_TIME_INDICATORS
+    : settings.showTimeIndicators;
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -222,165 +429,11 @@ export function WallpaperTable({
     );
     return used.length > 0 ? used : DAYS;
   }, [entries]);
-  const baseDensityConfig = {
-    "ultra-compact": {
-      outerPaddingX: "8px",
-      outerPaddingTop: "4px",
-      outerPaddingBottom: "2px",
-      boardWidth: "96%",
-      boardHeight: "95%",
-      titleHeightPx: 32,
-      titleSize: "12px",
-      headerRowHeight: "22px",
-      dayLabelSize: "9px",
-      timeColumnWidth: (
-        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
-      )
-        ? "24px"
-        : "0px",
-      timeLabelSize: "5.5px",
-      minCardHeight: "34px",
-      cardPaddingX: "4px",
-      cardPaddingY: "4px",
-      codeTight: "6.8px",
-      codeNormal: "8px",
-      venueTight: "4.8px",
-      venueNormal: "5.8px",
-      timeTight: "4.7px",
-      timeNormal: "5.4px",
-    },
-    compact: {
-      outerPaddingX: "12px",
-      outerPaddingTop: "4px",
-      outerPaddingBottom: "2px",
-      boardWidth: "94%",
-      boardHeight: "93%",
-      titleHeightPx: 36,
-      titleSize: "13px",
-      headerRowHeight: "24px",
-      dayLabelSize: "10px",
-      timeColumnWidth: (
-        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
-      )
-        ? "28px"
-        : "0px",
-      timeLabelSize: "6px",
-      minCardHeight: "38px",
-      cardPaddingX: "6px",
-      cardPaddingY: "6px",
-      codeTight: "6.6px",
-      codeNormal: "8.2px",
-      venueTight: "5.2px",
-      venueNormal: "6.2px",
-      timeTight: "5px",
-      timeNormal: "5.8px",
-    },
-    comfortable: {
-      outerPaddingX: "14px",
-      outerPaddingTop: "6px",
-      outerPaddingBottom: "4px",
-      boardWidth: "92%",
-      boardHeight: "90%",
-      titleHeightPx: 38,
-      titleSize: "13px",
-      headerRowHeight: "26px",
-      dayLabelSize: "10px",
-      timeColumnWidth: (
-        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
-      )
-        ? "30px"
-        : "0px",
-      timeLabelSize: "6.2px",
-      minCardHeight: "42px",
-      cardPaddingX: "7px",
-      cardPaddingY: "7px",
-      codeTight: "7px",
-      codeNormal: "8.6px",
-      venueTight: "5.5px",
-      venueNormal: "6.5px",
-      timeTight: "5.2px",
-      timeNormal: "6px",
-    },
-    spacious: {
-      outerPaddingX: "16px",
-      outerPaddingTop: "8px",
-      outerPaddingBottom: "6px",
-      boardWidth: "90%",
-      boardHeight: "87%",
-      titleHeightPx: 40,
-      titleSize: "14px",
-      headerRowHeight: "28px",
-      dayLabelSize: "10.5px",
-      timeColumnWidth: (
-        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
-      )
-        ? "32px"
-        : "0px",
-      timeLabelSize: "6.4px",
-      minCardHeight: "46px",
-      cardPaddingX: "8px",
-      cardPaddingY: "8px",
-      codeTight: "7.4px",
-      codeNormal: "9px",
-      venueTight: "5.8px",
-      venueNormal: "6.8px",
-      timeTight: "5.4px",
-      timeNormal: "6.2px",
-    },
-  }[settings.density];
   const isPortrait = settings.orientation === "portrait";
-  const densityConfig = {
-    ...baseDensityConfig,
-    outerPaddingX: isPortrait
-      ? `${Math.max(8, Number.parseFloat(baseDensityConfig.outerPaddingX) - 2)}px`
-      : baseDensityConfig.outerPaddingX,
-    boardWidth: isPortrait ? "93%" : baseDensityConfig.boardWidth,
-    boardHeight: isPortrait ? "85%" : baseDensityConfig.boardHeight,
-    titleHeightPx: isPortrait
-      ? Math.max(30, baseDensityConfig.titleHeightPx - 2)
-      : baseDensityConfig.titleHeightPx,
-    titleSize: isPortrait
-      ? `${Math.max(11.5, Number.parseFloat(baseDensityConfig.titleSize) - 1)}px`
-      : baseDensityConfig.titleSize,
-    headerRowHeight: isPortrait
-      ? `${Math.max(20, Number.parseFloat(baseDensityConfig.headerRowHeight) - 2)}px`
-      : baseDensityConfig.headerRowHeight,
-    dayLabelSize: isPortrait
-      ? `${Math.max(8.5, Number.parseFloat(baseDensityConfig.dayLabelSize) - 1)}px`
-      : baseDensityConfig.dayLabelSize,
-    timeColumnWidth:
-      (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators) &&
-      isPortrait
-        ? `${Math.max(22, Number.parseFloat(baseDensityConfig.timeColumnWidth) - 4)}px`
-        : baseDensityConfig.timeColumnWidth,
-    minCardHeight: isPortrait
-      ? `${Math.max(34, Number.parseFloat(baseDensityConfig.minCardHeight) - 4)}px`
-      : baseDensityConfig.minCardHeight,
-    cardPaddingX: isPortrait
-      ? `${Math.max(4, Number.parseFloat(baseDensityConfig.cardPaddingX) - 1)}px`
-      : baseDensityConfig.cardPaddingX,
-    cardPaddingY: isPortrait
-      ? `${Math.max(4, Number.parseFloat(baseDensityConfig.cardPaddingY) - 1)}px`
-      : baseDensityConfig.cardPaddingY,
-    codeTight: isPortrait
-      ? `${Math.max(5.8, Number.parseFloat(baseDensityConfig.codeTight) - 0.8)}px`
-      : baseDensityConfig.codeTight,
-    codeNormal: isPortrait
-      ? `${Math.max(7.2, Number.parseFloat(baseDensityConfig.codeNormal) - 0.8)}px`
-      : baseDensityConfig.codeNormal,
-    venueTight: isPortrait
-      ? `${Math.max(4.8, Number.parseFloat(baseDensityConfig.venueTight) - 0.4)}px`
-      : baseDensityConfig.venueTight,
-    venueNormal: isPortrait
-      ? `${Math.max(5.6, Number.parseFloat(baseDensityConfig.venueNormal) - 0.4)}px`
-      : baseDensityConfig.venueNormal,
-    timeTight: isPortrait
-      ? `${Math.max(4.6, Number.parseFloat(baseDensityConfig.timeTight) - 0.3)}px`
-      : baseDensityConfig.timeTight,
-    timeNormal: isPortrait
-      ? `${Math.max(5.2, Number.parseFloat(baseDensityConfig.timeNormal) - 0.3)}px`
-      : baseDensityConfig.timeNormal,
-  };
+  const densityConfig = useMemo(
+    () => getDensityConfig(settings.density, isPortrait, showTimeIndicators),
+    [settings.density, isPortrait, showTimeIndicators],
+  );
 
   const scheduleMetrics = useMemo(() => {
     const validEntries = entries.filter((entry) => {
@@ -522,13 +575,11 @@ export function WallpaperTable({
           className="grid text-[10px]"
           style={{
             height: `calc(100% - ${densityConfig.titleHeightPx}px)`,
-            gridTemplateRows: (
-              isPreview ? showPreviewDayLabels : settings.showDayLabels
-            )
+            gridTemplateRows: showDayLabels
               ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
               : "minmax(0, 1fr)",
           }}>
-          {(isPreview ? showPreviewDayLabels : settings.showDayLabels) ? (
+          {showDayLabels ? (
             <div
               className="grid"
               style={{
@@ -559,11 +610,7 @@ export function WallpaperTable({
             style={{
               gridTemplateColumns: `${timeColumnWidth} repeat(${dayCount}, minmax(0, 1fr))`,
             }}>
-            {(
-              isPreview
-                ? showPreviewTimeIndicators
-                : settings.showTimeIndicators
-            ) ? (
+            {showTimeIndicators ? (
               <div
                 className="grid"
                 style={{
@@ -750,6 +797,8 @@ export function WallpaperTable({
                           showSupportingDetails &&
                           settings.showTime &&
                           Boolean(timeLabel);
+                        const detailRowCount =
+                          Number(showVenueDetails) + Number(showTimeDetails);
                         const showCourseNameDetails =
                           showSupportingDetails &&
                           !isCompact &&
@@ -801,6 +850,28 @@ export function WallpaperTable({
                                 ],
                               )
                             : timeTextSize;
+                        const detailSizeScale =
+                          isExportMode && detailRowCount >= 2 ? 0.88 : 1;
+                        const resolvedVenueTextSize = `${(
+                          Number.parseFloat(exportVenueTextSize) * detailSizeScale
+                        ).toFixed(2)}px`;
+                        const resolvedTimeTextSize = `${(
+                          Number.parseFloat(exportTimeTextSize) * detailSizeScale
+                        ).toFixed(2)}px`;
+                        const venueDetailStyle = getBlockDetailStyle(
+                          resolvedVenueTextSize,
+                          isExportMode,
+                          isDarkOverlay
+                            ? "rgba(248, 250, 252, 0.96)"
+                            : "rgba(15, 23, 42, 0.86)",
+                        );
+                        const timeDetailStyle = getBlockDetailStyle(
+                          resolvedTimeTextSize,
+                          isExportMode,
+                          isDarkOverlay
+                            ? "rgba(248, 250, 252, 0.92)"
+                            : "rgba(15, 23, 42, 0.82)",
+                        );
 
                         const widthPercent = 100 / block.columnCount;
                         const inset = 2;
@@ -893,31 +964,9 @@ export function WallpaperTable({
                             ) : null}
                             {showVenueDetails ? (
                               <div
-                                className="max-w-full overflow-hidden whitespace-normal wrap-break-word font-semibold"
-                                style={{
-                                  color: isDarkOverlay
-                                    ? "rgba(248, 250, 252, 0.96)"
-                                    : "rgba(15, 23, 42, 0.86)",
-                                  fontSize: exportVenueTextSize,
-                                  lineHeight: isExportMode ? 1.04 : 1.12,
-                                  textAlign: "center",
-                                  overflow:
-                                    renderMode === "export"
-                                      ? "visible"
-                                      : "hidden",
-                                  overflowWrap: "anywhere",
-                                  wordBreak: "break-word",
-                                  display:
-                                    renderMode === "export"
-                                      ? "block"
-                                      : "-webkit-box",
-                                  WebkitLineClamp:
-                                    renderMode === "export" ? "unset" : 1,
-                                  WebkitBoxOrient:
-                                    renderMode === "export"
-                                      ? "unset"
-                                      : "vertical",
-                                }}>
+                                className="max-w-full font-semibold"
+                                title={venueLabel}
+                                style={venueDetailStyle}>
                                 {venueLabel}
                               </div>
                             ) : null}
@@ -946,31 +995,9 @@ export function WallpaperTable({
                             ) : null}
                             {showTimeDetails ? (
                               <div
-                                className="max-w-full overflow-hidden whitespace-normal wrap-break-word font-medium"
-                                style={{
-                                  color: isDarkOverlay
-                                    ? "rgba(248, 250, 252, 0.92)"
-                                    : "rgba(15, 23, 42, 0.82)",
-                                  fontSize: exportTimeTextSize,
-                                  lineHeight: isExportMode ? 1.04 : 1.12,
-                                  textAlign: "center",
-                                  overflow:
-                                    renderMode === "export"
-                                      ? "visible"
-                                      : "hidden",
-                                  overflowWrap: "anywhere",
-                                  wordBreak: "break-word",
-                                  display:
-                                    renderMode === "export"
-                                      ? "block"
-                                      : "-webkit-box",
-                                  WebkitLineClamp:
-                                    renderMode === "export" ? "unset" : 1,
-                                  WebkitBoxOrient:
-                                    renderMode === "export"
-                                      ? "unset"
-                                      : "vertical",
-                                }}>
+                                className="max-w-full font-medium"
+                                title={timeLabel}
+                                style={timeDetailStyle}>
                                 {timeLabel}
                               </div>
                             ) : null}
