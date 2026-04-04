@@ -115,7 +115,7 @@ function formatVenueLabel(
 function formatTimeLabel(start: string, end: string): string {
   if (!start && !end) return "";
   if (!end) return start;
-  return `${start} - ${end}`;
+  return `${start}-${end}`;
 }
 
 type TableBlock = {
@@ -599,9 +599,10 @@ export function WallpaperTable({
                     contain: "paint",
                   }}>
                   <div
-                    className="absolute inset-0 grid"
+                    className="pointer-events-none absolute inset-0 grid"
                     style={{
                       gridTemplateRows: `repeat(${scheduleMetrics.totalHours}, minmax(0, 1fr))`,
+                      zIndex: 2,
                     }}>
                     {hourLabels.map((hour) => (
                       <div
@@ -736,24 +737,32 @@ export function WallpaperTable({
                           allowExportSupportingDetails &&
                           settings.showLecturer &&
                           !!block.lecturer;
+                        const exportDetailsScale =
+                          renderMode === "export" ? 0.88 : 1;
                         const venueTextSize = `${(
                           Number.parseFloat(
                             isTight ? densityConfig.venueTight : densityConfig.venueNormal,
                           ) *
-                          clamp(readableBoost * 0.86, 0.96, 1.45)
+                          clamp(readableBoost * 0.82, 0.9, 1.28) *
+                          exportDetailsScale
                         ).toFixed(2)}px`;
                         const timeTextSize = `${(
                           Number.parseFloat(
                             isTight ? densityConfig.timeTight : densityConfig.timeNormal,
                           ) *
-                          clamp(readableBoost * 0.9, 0.98, 1.5)
+                          clamp(readableBoost * 0.86, 0.92, 1.32) *
+                          exportDetailsScale
                         ).toFixed(2)}px`;
                         const supportingDetailsLineClamp =
                           renderMode === "export"
-                            ? block.slotSpan >= 3
+                            ? block.slotSpan >= 4
                               ? 3
                               : 2
                             : 1;
+                        const exportCardAlignment =
+                          renderMode === "export" ? "flex-start" : "center";
+                        const exportCardGap =
+                          renderMode === "export" ? "1px" : "0px";
 
                         const widthPercent = 100 / block.columnCount;
                         const inset = 2;
@@ -774,7 +783,7 @@ export function WallpaperTable({
                         return (
                           <div
                             key={block.id}
-                            className="absolute flex flex-col items-start justify-center overflow-hidden rounded-[10px] border-2 text-left"
+                            className="absolute flex flex-col items-start overflow-hidden rounded-[10px] border-2 text-left"
                             style={{
                               top: `calc((100% / ${scheduleMetrics.totalSlots}) * ${block.startSlot} + ${verticalInset}px)`,
                               left: `calc(${block.columnIndex * widthPercent}% + ${inset}px)`,
@@ -788,7 +797,10 @@ export function WallpaperTable({
                               backgroundColor: isDarkOverlay
                                 ? "rgba(255, 255, 255, 0.08)"
                                 : toSoftTint(block.borderColor, 0.24),
-                              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.10)",
+                              boxShadow: "none",
+                              justifyContent: exportCardAlignment,
+                              gap: exportCardGap,
+                              zIndex: 1,
                             }}>
                             {(isPreview ? showPreviewCourseCode : settings.showCourseCode) ? (
                               <div
@@ -809,18 +821,18 @@ export function WallpaperTable({
                             ) : null}
                             {showVenueDetails ? (
                               <div
-                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal font-semibold"
+                                className="max-w-full overflow-hidden whitespace-normal font-semibold"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.96)"
                                     : "rgba(15, 23, 42, 0.86)",
                                   fontSize: venueTextSize,
-                                  lineHeight: 1.12,
+                                  lineHeight: 1.05,
                                   display: "-webkit-box",
                                   WebkitLineClamp: supportingDetailsLineClamp,
                                   WebkitBoxOrient: "vertical",
-                                  overflowWrap: "anywhere",
-                                  wordBreak: "break-word",
+                                  overflowWrap: "break-word",
+                                  wordBreak: "normal",
                                 }}>
                                 {venueLabel}
                               </div>
@@ -848,18 +860,18 @@ export function WallpaperTable({
                             ) : null}
                             {showTimeDetails ? (
                               <div
-                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal font-medium"
+                                className="max-w-full overflow-hidden whitespace-normal font-medium"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.92)"
                                     : "rgba(15, 23, 42, 0.82)",
                                   fontSize: timeTextSize,
-                                  lineHeight: 1.12,
+                                  lineHeight: 1.05,
                                   display: "-webkit-box",
                                   WebkitLineClamp: supportingDetailsLineClamp,
                                   WebkitBoxOrient: "vertical",
-                                  overflowWrap: "anywhere",
-                                  wordBreak: "break-word",
+                                  overflowWrap: "break-word",
+                                  wordBreak: "normal",
                                 }}>
                                 {timeLabel}
                               </div>
