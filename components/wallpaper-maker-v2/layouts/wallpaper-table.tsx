@@ -74,9 +74,13 @@ function getPerceivedBrightness(value: string): number {
   return (r * 299 + g * 587 + b * 114) / 1000;
 }
 
-function formatVenueLabel(venue: string): string {
+function formatVenueLabel(
+  venue: string,
+  options?: { truncate?: boolean },
+): string {
   const trimmed = venue.trim();
   if (!trimmed) return "";
+  const shouldTruncate = options?.truncate ?? true;
 
   if (/online/i.test(trimmed)) return "Online";
   if (/virtual\s*lab/i.test(trimmed)) return "Virtual Lab";
@@ -95,10 +99,16 @@ function formatVenueLabel(venue: string): string {
   const tokens = trimmed.replace(/[(),]/g, " ").split(/\s+/).filter(Boolean);
 
   if (tokens.length === 1) {
-    return tokens[0].length > 12 ? `${tokens[0].slice(0, 12)}...` : tokens[0];
+    return shouldTruncate && tokens[0].length > 12
+      ? `${tokens[0].slice(0, 12)}...`
+      : tokens[0];
   }
 
   const compact = tokens.slice(0, 2).join(" ");
+  if (!shouldTruncate) {
+    return trimmed.replace(/\s+/g, " ");
+  }
+
   return compact.length > 16 ? `${compact.slice(0, 16)}...` : compact;
 }
 
@@ -607,7 +617,11 @@ export function WallpaperTable({
                       (() => {
                         const isCompact = block.durationMinutes <= 75;
                         const isTight = isCompact || block.columnCount > 1;
-                        const venueLabel = formatVenueLabel(block.venue);
+                        const allowExportSupportingDetails =
+                          renderMode === "export" && block.columnCount === 1;
+                        const venueLabel = formatVenueLabel(block.venue, {
+                          truncate: !allowExportSupportingDetails,
+                        });
                         const timeLabel = !isPreview && settings.showTime
                           ? formatTimeLabel(block.start, block.end)
                           : "";
@@ -710,8 +724,6 @@ export function WallpaperTable({
                             2.1,
                           )
                         ).toFixed(2)}px`;
-                        const allowExportSupportingDetails =
-                          renderMode === "export" && block.columnCount === 1;
                         const showVenueDetails =
                           allowExportSupportingDetails &&
                           settings.showVenue &&
@@ -736,6 +748,12 @@ export function WallpaperTable({
                           ) *
                           clamp(readableBoost * 0.9, 0.98, 1.5)
                         ).toFixed(2)}px`;
+                        const supportingDetailsLineClamp =
+                          renderMode === "export"
+                            ? block.slotSpan >= 3
+                              ? 3
+                              : 2
+                            : 1;
 
                         const widthPercent = 100 / block.columnCount;
                         const inset = 2;
@@ -791,7 +809,7 @@ export function WallpaperTable({
                             ) : null}
                             {showVenueDetails ? (
                               <div
-                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-semibold"
+                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal font-semibold"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.96)"
@@ -799,8 +817,10 @@ export function WallpaperTable({
                                   fontSize: venueTextSize,
                                   lineHeight: 1.12,
                                   display: "-webkit-box",
-                                  WebkitLineClamp: 1,
+                                  WebkitLineClamp: supportingDetailsLineClamp,
                                   WebkitBoxOrient: "vertical",
+                                  overflowWrap: "anywhere",
+                                  wordBreak: "break-word",
                                 }}>
                                 {venueLabel}
                               </div>
@@ -828,7 +848,7 @@ export function WallpaperTable({
                             ) : null}
                             {showTimeDetails ? (
                               <div
-                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-medium"
+                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal font-medium"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.92)"
@@ -836,8 +856,10 @@ export function WallpaperTable({
                                   fontSize: timeTextSize,
                                   lineHeight: 1.12,
                                   display: "-webkit-box",
-                                  WebkitLineClamp: 1,
+                                  WebkitLineClamp: supportingDetailsLineClamp,
                                   WebkitBoxOrient: "vertical",
+                                  overflowWrap: "anywhere",
+                                  wordBreak: "break-word",
                                 }}>
                                 {timeLabel}
                               </div>
