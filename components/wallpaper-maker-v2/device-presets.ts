@@ -228,20 +228,10 @@ export function getLandscapeRightPadding(
   deviceKind: DeviceKind
 ): string {
   const phonePadding: Record<LayoutStyle, string> = {
-    "compact-list": "44px",
-    timeline: "44px",
-    "day-cards": "44px",
-    agenda: "36px",
-    "mini-grid": "30px",
     "wallpaper-table": "24px",
   };
 
   const tabletPadding: Record<LayoutStyle, string> = {
-    "compact-list": "36px",
-    timeline: "36px",
-    "day-cards": "34px",
-    agenda: "30px",
-    "mini-grid": "26px",
     "wallpaper-table": "22px",
   };
 

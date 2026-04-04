@@ -3,13 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { TimetableEntry } from "@/lib/types";
 
-export type LayoutStyle =
-  | "compact-list"
-  | "timeline"
-  | "day-cards"
-  | "mini-grid"
-  | "agenda"
-  | "wallpaper-table";
+export type LayoutStyle = "wallpaper-table";
 export type ThemeId =
   | "ios-default"
   | "light"

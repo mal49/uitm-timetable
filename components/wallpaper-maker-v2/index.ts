@@ -14,10 +14,5 @@ export type {
   WallpaperSettings,
 } from "./wallpaper-context";
 
-// Layout components
-export { CompactList } from "./layouts/compact-list";
-export { TimelineView } from "./layouts/timeline-view";
-export { DayCards } from "./layouts/day-cards";
-export { MiniGrid } from "./layouts/mini-grid";
-export { AgendaStyle } from "./layouts/agenda-style";
+// Layout component
 export { WallpaperTable } from "./layouts/wallpaper-table";
