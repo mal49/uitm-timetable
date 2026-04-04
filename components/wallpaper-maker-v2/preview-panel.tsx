@@ -315,9 +315,7 @@ export function PreviewPanel() {
   const previewConfig = isPortrait
     ? PORTRAIT_PREVIEW_CONFIG
     : LANDSCAPE_PREVIEW_CONFIG;
-  const exportSize = isPortrait
-    ? PORTRAIT_EXPORT_SIZE
-    : LANDSCAPE_EXPORT_SIZE;
+  const exportSize = isPortrait ? PORTRAIT_EXPORT_SIZE : LANDSCAPE_EXPORT_SIZE;
   const fontWeightMap: Record<typeof settings.fontWeight, number> = {
     light: 300,
     regular: 400,
@@ -454,7 +452,7 @@ export function PreviewPanel() {
 
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed top-0 -left-[9999px] opacity-0">
+        className="pointer-events-none fixed top-0 -left-2499.75 opacity-0">
         <div
           ref={exportRef}
           className="relative overflow-hidden"
@@ -463,7 +461,9 @@ export function PreviewPanel() {
             height: exportSize.height,
             ...sceneStyle,
           }}>
-          <div className="h-full w-full overflow-hidden" style={contentPaddingStyle}>
+          <div
+            className="h-full w-full overflow-hidden"
+            style={contentPaddingStyle}>
             <WallpaperTable
               entries={entries}
               colorOverrides={colorOverrides}

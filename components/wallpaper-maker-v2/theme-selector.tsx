@@ -45,7 +45,8 @@ const themeGroups: ThemeGroup[] = [
       {
         id: "glass",
         name: "Glassmorphism",
-        preview: "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%)",
+        preview:
+          "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%)",
       },
     ],
   },
@@ -91,7 +92,8 @@ function normalizeHexColor(value?: string): string | null {
 
 export function ThemeSelector() {
   const { settings, updateSettings } = useWallpaper();
-  const customColor = normalizeHexColor(settings.customBackground) ?? CUSTOM_COLOR_FALLBACK;
+  const customColor =
+    normalizeHexColor(settings.customBackground) ?? CUSTOM_COLOR_FALLBACK;
   const [pickerColor, setPickerColor] = useState(customColor);
 
   useEffect(() => {
@@ -121,15 +123,16 @@ export function ThemeSelector() {
   return (
     <Accordion
       multiple
-      defaultValue={[...themeGroups.map((group) => group.title), "Custom Color"]}
-      className="space-y-3"
-    >
+      defaultValue={[
+        ...themeGroups.map((group) => group.title),
+        "Custom Color",
+      ]}
+      className="space-y-3">
       {themeGroups.map((group) => (
         <AccordionItem
           key={group.title}
           value={group.title}
-          className="rounded-xl border border-slate-200 bg-slate-50/60 px-2.5"
-        >
+          className="rounded-xl border border-slate-200 bg-slate-50/60 px-2.5">
           <AccordionTrigger className="px-1 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 hover:no-underline">
             {group.title}
           </AccordionTrigger>
@@ -146,18 +149,21 @@ export function ThemeSelector() {
                     className={cn(
                       "relative overflow-hidden rounded-lg border-2 transition-all",
                       "hover:border-[#21d4cf]/60",
-                      isSelected ? "border-[#21d4cf]" : "border-slate-200 bg-white"
-                    )}
-                  >
-                    <div className="h-16 w-full" style={{ background: theme.preview }} />
+                      isSelected
+                        ? "border-[#21d4cf]"
+                        : "border-slate-200 bg-white",
+                    )}>
+                    <div
+                      className="h-16 w-full"
+                      style={{ background: theme.preview }}
+                    />
 
                     <div className="bg-background px-2 py-1.5">
                       <div
                         className={cn(
                           "truncate text-center text-xs font-medium transition-colors",
-                          isSelected ? "text-[#0f766e]" : "text-slate-700"
-                        )}
-                      >
+                          isSelected ? "text-[#0f766e]" : "text-slate-700",
+                        )}>
                         {theme.name}
                       </div>
                     </div>
@@ -169,15 +175,13 @@ export function ThemeSelector() {
                 );
               })}
             </div>
-
           </AccordionContent>
         </AccordionItem>
       ))}
 
       <AccordionItem
         value="Custom Color"
-        className="rounded-xl border border-slate-200 bg-slate-50/60 px-2.5"
-      >
+        className="rounded-xl border border-slate-200 bg-slate-50/60 px-2.5">
         <AccordionTrigger className="px-1 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 hover:no-underline">
           Custom Color
         </AccordionTrigger>
@@ -187,9 +191,8 @@ export function ThemeSelector() {
               "rounded-xl border p-2.5 transition-all",
               settings.themeId === "custom"
                 ? "border-[#21d4cf] bg-[#ecfeff]"
-                : "border-slate-200 bg-white"
-            )}
-          >
+                : "border-slate-200 bg-white",
+            )}>
             <div className="space-y-2.5">
               <div>
                 <div>
@@ -202,9 +205,7 @@ export function ThemeSelector() {
                 </div>
               </div>
 
-              <div
-                className="mx-auto w-full max-w-[272px] overflow-hidden rounded-lg border border-slate-200 bg-white"
-              >
+              <div className="mx-auto w-full max-w-68 overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <SketchPicker
                   color={pickerColor}
                   onChange={handleCustomColorChange}

@@ -203,7 +203,9 @@ export function WallpaperTable({
 
   const activeDays = useMemo(() => {
     const used = DAYS.filter((day) =>
-      entries.some((entry) => getDayIndex(entry.day || "") === DAYS.indexOf(day)),
+      entries.some(
+        (entry) => getDayIndex(entry.day || "") === DAYS.indexOf(day),
+      ),
     );
     return used.length > 0 ? used : DAYS;
   }, [entries]);
@@ -218,10 +220,11 @@ export function WallpaperTable({
       titleSize: "12px",
       headerRowHeight: "22px",
       dayLabelSize: "9px",
-      timeColumnWidth:
-        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
-          ? "24px"
-          : "0px",
+      timeColumnWidth: (
+        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
+      )
+        ? "24px"
+        : "0px",
       timeLabelSize: "5.5px",
       minCardHeight: "34px",
       cardPaddingX: "4px",
@@ -243,10 +246,11 @@ export function WallpaperTable({
       titleSize: "13px",
       headerRowHeight: "24px",
       dayLabelSize: "10px",
-      timeColumnWidth:
-        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
-          ? "28px"
-          : "0px",
+      timeColumnWidth: (
+        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
+      )
+        ? "28px"
+        : "0px",
       timeLabelSize: "6px",
       minCardHeight: "38px",
       cardPaddingX: "6px",
@@ -268,10 +272,11 @@ export function WallpaperTable({
       titleSize: "13px",
       headerRowHeight: "26px",
       dayLabelSize: "10px",
-      timeColumnWidth:
-        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
-          ? "30px"
-          : "0px",
+      timeColumnWidth: (
+        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
+      )
+        ? "30px"
+        : "0px",
       timeLabelSize: "6.2px",
       minCardHeight: "42px",
       cardPaddingX: "7px",
@@ -293,10 +298,11 @@ export function WallpaperTable({
       titleSize: "14px",
       headerRowHeight: "28px",
       dayLabelSize: "10.5px",
-      timeColumnWidth:
-        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
-          ? "32px"
-          : "0px",
+      timeColumnWidth: (
+        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
+      )
+        ? "32px"
+        : "0px",
       timeLabelSize: "6.4px",
       minCardHeight: "46px",
       cardPaddingX: "8px",
@@ -420,10 +426,8 @@ export function WallpaperTable({
           return {
             id: `${entry.day}-${entry.start}-${entry.end}-${courseCode}`,
             dayIndex,
-            startSlot:
-              (clippedStart - startMinutes) / POSITION_SLOT_MINUTES,
-            slotSpan:
-              (clippedEnd - clippedStart) / POSITION_SLOT_MINUTES,
+            startSlot: (clippedStart - startMinutes) / POSITION_SLOT_MINUTES,
+            slotSpan: (clippedEnd - clippedStart) / POSITION_SLOT_MINUTES,
             durationMinutes: clippedEnd - clippedStart,
             courseCode: normalizedCourseCode,
             subjectName: entry.subjectName || "",
@@ -505,11 +509,11 @@ export function WallpaperTable({
           className="grid text-[10px]"
           style={{
             height: `calc(100% - ${densityConfig.titleHeightPx}px)`,
-                gridTemplateRows: (isPreview
-                  ? showPreviewDayLabels
-                  : settings.showDayLabels)
-                  ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
-                  : "minmax(0, 1fr)",
+            gridTemplateRows: (
+              isPreview ? showPreviewDayLabels : settings.showDayLabels
+            )
+              ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
+              : "minmax(0, 1fr)",
           }}>
           {(isPreview ? showPreviewDayLabels : settings.showDayLabels) ? (
             <div
@@ -542,7 +546,11 @@ export function WallpaperTable({
             style={{
               gridTemplateColumns: `${timeColumnWidth} repeat(${dayCount}, minmax(0, 1fr))`,
             }}>
-            {(isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators) ? (
+            {(
+              isPreview
+                ? showPreviewTimeIndicators
+                : settings.showTimeIndicators
+            ) ? (
               <div
                 className="grid"
                 style={{
@@ -605,9 +613,14 @@ export function WallpaperTable({
                         const isCompact = block.durationMinutes <= 75;
                         const isTight = isCompact || block.columnCount > 1;
                         const venueLabel = formatVenueLabel(block.venue);
-                        const timeLabel = formatTimeLabel(block.start, block.end);
+                        const timeLabel = formatTimeLabel(
+                          block.start,
+                          block.end,
+                        );
                         const baseCodeTextSize = Number.parseFloat(
-                          isTight ? densityConfig.codeTight : densityConfig.codeNormal,
+                          isTight
+                            ? densityConfig.codeTight
+                            : densityConfig.codeNormal,
                         );
                         const codeLength = block.courseCode.length;
                         const blockWidthScore = Math.sqrt(
@@ -654,7 +667,9 @@ export function WallpaperTable({
                         const previewTightCodePenalty =
                           renderMode === "preview" &&
                           isPortrait &&
-                          (isOneHourBlock || block.columnCount > 1 || dayCount >= 6)
+                          (isOneHourBlock ||
+                            block.columnCount > 1 ||
+                            dayCount >= 6)
                             ? codeLength >= 6
                               ? 0.92
                               : 0.96
@@ -682,7 +697,9 @@ export function WallpaperTable({
                           codeFitScaleX *
                             (renderMode === "preview" &&
                             isPortrait &&
-                            (isOneHourBlock || block.columnCount > 1 || dayCount >= 6)
+                            (isOneHourBlock ||
+                              block.columnCount > 1 ||
+                              dayCount >= 6)
                               ? 0.9
                               : 1),
                           0.54,
@@ -729,16 +746,20 @@ export function WallpaperTable({
                           Boolean(block.lecturer);
                         const venueTextSize = `${(
                           Number.parseFloat(
-                            isTight ? densityConfig.venueTight : densityConfig.venueNormal,
-                          ) *
-                          clamp(readableBoost * 0.86, 0.96, 1.45)
+                            isTight
+                              ? densityConfig.venueTight
+                              : densityConfig.venueNormal,
+                          ) * clamp(readableBoost * 0.86, 0.96, 1.45)
                         ).toFixed(2)}px`;
                         const timeTextSize = `${(
                           Number.parseFloat(
-                            isTight ? densityConfig.timeTight : densityConfig.timeNormal,
-                          ) *
-                          clamp(readableBoost * 0.9, 0.98, 1.5)
+                            isTight
+                              ? densityConfig.timeTight
+                              : densityConfig.timeNormal,
+                          ) * clamp(readableBoost * 0.9, 0.98, 1.5)
                         ).toFixed(2)}px`;
+                        const supportingDetailsLineClamp =
+                          renderMode === "export" ? 2 : 1;
 
                         const widthPercent = 100 / block.columnCount;
                         const inset = 2;
@@ -795,7 +816,7 @@ export function WallpaperTable({
                             ) : null}
                             {showVenueDetails ? (
                               <div
-                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal font-semibold"
+                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-semibold"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.96)"
@@ -804,7 +825,7 @@ export function WallpaperTable({
                                   lineHeight: 1.12,
                                   textAlign: "center",
                                   display: "-webkit-box",
-                                  WebkitLineClamp: 1,
+                                  WebkitLineClamp: supportingDetailsLineClamp,
                                   WebkitBoxOrient: "vertical",
                                 }}>
                                 {venueLabel}
@@ -835,7 +856,7 @@ export function WallpaperTable({
                             ) : null}
                             {showTimeDetails ? (
                               <div
-                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal font-medium"
+                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-medium"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.92)"
@@ -844,7 +865,7 @@ export function WallpaperTable({
                                   lineHeight: 1.12,
                                   textAlign: "center",
                                   display: "-webkit-box",
-                                  WebkitLineClamp: 1,
+                                  WebkitLineClamp: supportingDetailsLineClamp,
                                   WebkitBoxOrient: "vertical",
                                 }}>
                                 {timeLabel}

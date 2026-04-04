@@ -86,18 +86,16 @@ export function VisibilityControls() {
               "group flex min-w-0 cursor-pointer flex-col rounded-xl border px-3 py-3 transition-all",
               checked
                 ? "border-[#21d4cf]/45 bg-[#21d4cf]/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                : "border-border/70 bg-muted/[0.18] hover:border-border hover:bg-muted/[0.28]"
-            )}
-          >
+                : "border-border/70 bg-muted/18 hover:border-border hover:bg-muted/[0.28]",
+            )}>
             <div className="flex w-full items-start justify-between gap-2">
               <div
                 className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors",
                   checked
                     ? "border-[#21d4cf]/40 bg-[#21d4cf]/12 text-[#0f766e]"
-                    : "border-slate-200 bg-white text-slate-500 group-hover:text-slate-900"
-                )}
-              >
+                    : "border-slate-200 bg-white text-slate-500 group-hover:text-slate-900",
+                )}>
                 <Icon className="h-4 w-4" />
               </div>
 
@@ -106,13 +104,12 @@ export function VisibilityControls() {
                   "relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
                   checked
                     ? "border-[#21d4cf]/60 bg-[#21d4cf]"
-                    : "border-border bg-background/80"
-                )}
-              >
+                    : "border-border bg-background/80",
+                )}>
                 <span
                   className={cn(
-                    "ml-0.5 block h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform",
-                    checked ? "translate-x-5" : "translate-x-0"
+                    "ml-0.5 block h-4.5 w-4.5 rounded-full bg-white shadow-sm transition-transform",
+                    checked ? "translate-x-5" : "translate-x-0",
                   )}
                 />
               </span>
@@ -120,14 +117,18 @@ export function VisibilityControls() {
 
             <div className="mt-2 min-w-0 w-full">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[14px] font-semibold leading-tight text-foreground">{label}</span>
+                <span className="text-[14px] font-semibold leading-tight text-foreground">
+                  {label}
+                </span>
                 {checked ? (
                   <span className="rounded-full bg-[#21d4cf]/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#0f766e]">
                     On
                   </span>
                 ) : null}
               </div>
-              <p className="mt-1 text-[11px] leading-4 text-slate-600">{description}</p>
+              <p className="mt-1 text-[11px] leading-4 text-slate-600">
+                {description}
+              </p>
             </div>
 
             <input
