@@ -738,7 +738,7 @@ export function WallpaperTable({
                           settings.showLecturer &&
                           !!block.lecturer;
                         const exportDetailsScale =
-                          renderMode === "export" ? 0.88 : 1;
+                          renderMode === "export" ? 0.72 : 1;
                         const venueTextSize = `${(
                           Number.parseFloat(
                             isTight ? densityConfig.venueTight : densityConfig.venueNormal,
@@ -753,16 +753,13 @@ export function WallpaperTable({
                           clamp(readableBoost * 0.86, 0.92, 1.32) *
                           exportDetailsScale
                         ).toFixed(2)}px`;
-                        const supportingDetailsLineClamp =
-                          renderMode === "export"
-                            ? block.slotSpan >= 4
-                              ? 3
-                              : 2
-                            : 1;
-                        const exportCardAlignment =
-                          renderMode === "export" ? "flex-start" : "center";
+                        const supportingDetailsMaxLines =
+                          renderMode === "export" ? 2 : 1;
+                        const exportCardAlignment = "center";
                         const exportCardGap =
-                          renderMode === "export" ? "1px" : "0px";
+                          renderMode === "export" ? "2px" : "0px";
+                        const exportDetailMinHeight =
+                          renderMode === "export" ? "2.1em" : undefined;
 
                         const widthPercent = 100 / block.columnCount;
                         const inset = 2;
@@ -783,7 +780,7 @@ export function WallpaperTable({
                         return (
                           <div
                             key={block.id}
-                            className="absolute flex flex-col items-start overflow-hidden rounded-[10px] border-2 text-left"
+                            className="absolute flex flex-col items-center overflow-hidden rounded-[10px] border-2 text-center"
                             style={{
                               top: `calc((100% / ${scheduleMetrics.totalSlots}) * ${block.startSlot} + ${verticalInset}px)`,
                               left: `calc(${block.columnIndex * widthPercent}% + ${inset}px)`,
@@ -813,8 +810,8 @@ export function WallpaperTable({
                                   letterSpacing:
                                     codeLength >= 8 ? "-0.06em" : "-0.045em",
                                   transform: `scaleX(${previewCodeFitScaleX})`,
-                                  transformOrigin: isPreview ? "center center" : "left center",
-                                  textAlign: isPreview ? "center" : "left",
+                                  transformOrigin: "center center",
+                                  textAlign: "center",
                                 }}>
                                 {block.courseCode}
                               </div>
@@ -828,11 +825,16 @@ export function WallpaperTable({
                                     : "rgba(15, 23, 42, 0.86)",
                                   fontSize: venueTextSize,
                                   lineHeight: 1.05,
-                                  display: "-webkit-box",
-                                  WebkitLineClamp: supportingDetailsLineClamp,
-                                  WebkitBoxOrient: "vertical",
-                                  overflowWrap: "break-word",
-                                  wordBreak: "normal",
+                                  minHeight: exportDetailMinHeight,
+                                  maxHeight:
+                                    renderMode === "export"
+                                      ? `${supportingDetailsMaxLines * 1.05}em`
+                                      : undefined,
+                                  overflowWrap:
+                                    renderMode === "export" ? "anywhere" : "break-word",
+                                  wordBreak:
+                                    renderMode === "export" ? "break-word" : "normal",
+                                  textAlign: "center",
                                 }}>
                                 {venueLabel}
                               </div>
@@ -842,7 +844,7 @@ export function WallpaperTable({
                             block.subjectName ? (
                               <div
                                 className="mt-0.5 max-w-full whitespace-normal wrap-break-word text-[6.3px] leading-[1.1] font-medium"
-                                style={{ color: tableSubtleText }}>
+                                style={{ color: tableSubtleText, textAlign: "center" }}>
                                 {block.subjectName}
                               </div>
                             ) : null}
@@ -854,6 +856,7 @@ export function WallpaperTable({
                                   display: "-webkit-box",
                                   WebkitLineClamp: 1,
                                   WebkitBoxOrient: "vertical",
+                                  textAlign: "center",
                                 }}>
                                 {block.lecturer}
                               </div>
@@ -867,11 +870,16 @@ export function WallpaperTable({
                                     : "rgba(15, 23, 42, 0.82)",
                                   fontSize: timeTextSize,
                                   lineHeight: 1.05,
-                                  display: "-webkit-box",
-                                  WebkitLineClamp: supportingDetailsLineClamp,
-                                  WebkitBoxOrient: "vertical",
-                                  overflowWrap: "break-word",
-                                  wordBreak: "normal",
+                                  minHeight: exportDetailMinHeight,
+                                  maxHeight:
+                                    renderMode === "export"
+                                      ? `${supportingDetailsMaxLines * 1.05}em`
+                                      : undefined,
+                                  overflowWrap:
+                                    renderMode === "export" ? "anywhere" : "break-word",
+                                  wordBreak:
+                                    renderMode === "export" ? "break-word" : "normal",
+                                  textAlign: "center",
                                 }}>
                                 {timeLabel}
                               </div>
