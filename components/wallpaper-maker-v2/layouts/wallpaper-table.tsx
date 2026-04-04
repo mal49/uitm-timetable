@@ -85,6 +85,19 @@ function formatTimeLabel(start: string, end: string): string {
   return `${start} - ${end}`;
 }
 
+function getExportDetailFontSize(
+  baseSizePx: number,
+  text: string,
+  thresholds: Array<{ maxLength: number; scale: number }>,
+): string {
+  const normalizedLength = text.trim().length;
+  const matchedThreshold = thresholds.find(
+    ({ maxLength }) => normalizedLength <= maxLength,
+  );
+  const scale = matchedThreshold?.scale ?? thresholds[thresholds.length - 1]?.scale ?? 1;
+  return `${(baseSizePx * scale).toFixed(2)}px`;
+}
+
 type TableBlock = {
   id: string;
   dayIndex: number;
@@ -484,7 +497,7 @@ export function WallpaperTable({
         paddingBottom: densityConfig.outerPaddingBottom,
       }}>
       <div
-        className="mx-auto mt-0 rounded-[15px] overflow-hidden shadow-[0_14px_30px_rgba(0,0,0,0.08)]"
+        className="mx-auto mt-0 rounded-[15px] overflow-hidden"
         style={{
           width: densityConfig.boardWidth,
           height: densityConfig.boardHeight,
@@ -752,6 +765,20 @@ export function WallpaperTable({
                               : densityConfig.venueNormal,
                           ) * clamp(readableBoost * 0.86, 0.96, 1.45)
                         ).toFixed(2)}px`;
+                        const exportVenueTextSize =
+                          renderMode === "export"
+                            ? getExportDetailFontSize(
+                                Number.parseFloat(venueTextSize),
+                                venueLabel,
+                                [
+                                  { maxLength: 18, scale: 1 },
+                                  { maxLength: 28, scale: 0.92 },
+                                  { maxLength: 40, scale: 0.84 },
+                                  { maxLength: 56, scale: 0.76 },
+                                  { maxLength: Number.POSITIVE_INFINITY, scale: 0.68 },
+                                ],
+                              )
+                            : venueTextSize;
                         const timeTextSize = `${(
                           Number.parseFloat(
                             isTight
@@ -759,8 +786,19 @@ export function WallpaperTable({
                               : densityConfig.timeNormal,
                           ) * clamp(readableBoost * 0.9, 0.98, 1.5)
                         ).toFixed(2)}px`;
-                        const supportingDetailsLineClamp =
-                          renderMode === "export" ? 2 : 1;
+                        const exportTimeTextSize =
+                          renderMode === "export"
+                            ? getExportDetailFontSize(
+                                Number.parseFloat(timeTextSize),
+                                timeLabel,
+                                [
+                                  { maxLength: 13, scale: 1 },
+                                  { maxLength: 17, scale: 0.92 },
+                                  { maxLength: 24, scale: 0.84 },
+                                  { maxLength: Number.POSITIVE_INFINITY, scale: 0.76 },
+                                ],
+                              )
+                            : timeTextSize;
 
                         const widthPercent = 100 / block.columnCount;
                         const inset = 2;
@@ -795,7 +833,6 @@ export function WallpaperTable({
                               backgroundColor: isDarkOverlay
                                 ? "rgba(255, 255, 255, 0.08)"
                                 : toSoftTint(block.borderColor, 0.24),
-                              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.10)",
                               zIndex: 1,
                             }}>
                             {showCourseCode ? (
@@ -822,12 +859,25 @@ export function WallpaperTable({
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.96)"
                                     : "rgba(15, 23, 42, 0.86)",
-                                  fontSize: venueTextSize,
+                                  fontSize: exportVenueTextSize,
                                   lineHeight: 1.12,
                                   textAlign: "center",
-                                  display: "-webkit-box",
-                                  WebkitLineClamp: supportingDetailsLineClamp,
-                                  WebkitBoxOrient: "vertical",
+                                  overflow:
+                                    renderMode === "export"
+                                      ? "visible"
+                                      : "hidden",
+                                  overflowWrap: "anywhere",
+                                  wordBreak: "break-word",
+                                  display:
+                                    renderMode === "export"
+                                      ? "block"
+                                      : "-webkit-box",
+                                  WebkitLineClamp:
+                                    renderMode === "export" ? "unset" : 1,
+                                  WebkitBoxOrient:
+                                    renderMode === "export"
+                                      ? "unset"
+                                      : "vertical",
                                 }}>
                                 {venueLabel}
                               </div>
@@ -862,12 +912,25 @@ export function WallpaperTable({
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.92)"
                                     : "rgba(15, 23, 42, 0.82)",
-                                  fontSize: timeTextSize,
+                                  fontSize: exportTimeTextSize,
                                   lineHeight: 1.12,
                                   textAlign: "center",
-                                  display: "-webkit-box",
-                                  WebkitLineClamp: supportingDetailsLineClamp,
-                                  WebkitBoxOrient: "vertical",
+                                  overflow:
+                                    renderMode === "export"
+                                      ? "visible"
+                                      : "hidden",
+                                  overflowWrap: "anywhere",
+                                  wordBreak: "break-word",
+                                  display:
+                                    renderMode === "export"
+                                      ? "block"
+                                      : "-webkit-box",
+                                  WebkitLineClamp:
+                                    renderMode === "export" ? "unset" : 1,
+                                  WebkitBoxOrient:
+                                    renderMode === "export"
+                                      ? "unset"
+                                      : "vertical",
                                 }}>
                                 {timeLabel}
                               </div>
