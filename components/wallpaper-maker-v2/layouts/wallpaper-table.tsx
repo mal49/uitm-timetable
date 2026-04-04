@@ -623,6 +623,7 @@ export function WallpaperTable({
                     .filter((block) => block.dayIndex === dayIndex)
                     .map((block) =>
                       (() => {
+                        const isExportMode = renderMode === "export";
                         const isCompact = block.durationMinutes <= 75;
                         const isTight = isCompact || block.columnCount > 1;
                         const venueLabel = formatVenueLabel(block.venue);
@@ -723,6 +724,7 @@ export function WallpaperTable({
                           codeScale *
                           codeDensityPenalty *
                           previewTightCodePenalty *
+                          (isExportMode ? 0.84 : 1) *
                           tightFitPenalty *
                           (renderMode === "preview"
                             ? isPortrait && (isOneHourBlock || dayCount >= 6)
@@ -815,24 +817,53 @@ export function WallpaperTable({
                               Number.parseFloat(densityConfig.cardPaddingX) - 2,
                             )}px`
                           : densityConfig.cardPaddingX;
+                        const exportPaddingY = `${Math.max(
+                          2,
+                          Number.parseFloat(compactPaddingY) - 1,
+                        )}px`;
+                        const exportPaddingX = `${Math.max(
+                          2,
+                          Number.parseFloat(compactPaddingX) - 1,
+                        )}px`;
+                        const contentAlignItems =
+                          isExportMode && !prioritizeCodeOnly
+                            ? "stretch"
+                            : "center";
+                        const contentJustify =
+                          isExportMode && !prioritizeCodeOnly
+                            ? "flex-start"
+                            : "center";
+                        const contentGap =
+                          isExportMode && !prioritizeCodeOnly ? "1px" : "0px";
 
                         return (
                           <div
                             key={block.id}
-                            className="absolute flex flex-col items-center justify-center overflow-hidden rounded-[10px] border-2 text-center"
+                            className="absolute flex flex-col overflow-hidden rounded-[10px] border-2 text-center"
                             style={{
                               top: `calc((100% / ${scheduleMetrics.totalSlots}) * ${block.startSlot} + ${verticalInset}px)`,
                               left: `calc(${block.columnIndex * widthPercent}% + ${inset}px)`,
                               width: `calc(${widthPercent}% - ${inset * 2}px)`,
                               height: `calc((100% / ${scheduleMetrics.totalSlots}) * ${block.slotSpan} - ${verticalInset * 2}px)`,
-                              paddingLeft: compactPaddingX,
-                              paddingRight: compactPaddingX,
-                              paddingTop: compactPaddingY,
-                              paddingBottom: compactPaddingY,
+                              paddingLeft: isExportMode
+                                ? exportPaddingX
+                                : compactPaddingX,
+                              paddingRight: isExportMode
+                                ? exportPaddingX
+                                : compactPaddingX,
+                              paddingTop: isExportMode
+                                ? exportPaddingY
+                                : compactPaddingY,
+                              paddingBottom: isExportMode
+                                ? exportPaddingY
+                                : compactPaddingY,
                               borderColor: block.borderColor,
                               backgroundColor: isDarkOverlay
                                 ? "rgba(255, 255, 255, 0.08)"
                                 : toSoftTint(block.borderColor, 0.24),
+                              alignItems: contentAlignItems,
+                              justifyContent: contentJustify,
+                              gap: contentGap,
                               zIndex: 1,
                             }}>
                             {showCourseCode ? (
@@ -844,9 +875,17 @@ export function WallpaperTable({
                                   lineHeight: 1,
                                   width: "100%",
                                   letterSpacing:
-                                    codeLength >= 8 ? "-0.06em" : "-0.045em",
-                                  transform: `scaleX(${previewCodeFitScaleX})`,
-                                  transformOrigin: "center center",
+                                    codeLength >= 8
+                                      ? isExportMode
+                                        ? "-0.04em"
+                                        : "-0.06em"
+                                      : "-0.045em",
+                                  transform: isExportMode
+                                    ? "none"
+                                    : `scaleX(${previewCodeFitScaleX})`,
+                                  transformOrigin: isExportMode
+                                    ? "initial"
+                                    : "center center",
                                   textAlign: "center",
                                 }}>
                                 {block.courseCode}
@@ -854,13 +893,13 @@ export function WallpaperTable({
                             ) : null}
                             {showVenueDetails ? (
                               <div
-                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-semibold"
+                                className="max-w-full overflow-hidden whitespace-normal wrap-break-word font-semibold"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.96)"
                                     : "rgba(15, 23, 42, 0.86)",
                                   fontSize: exportVenueTextSize,
-                                  lineHeight: 1.12,
+                                  lineHeight: isExportMode ? 1.04 : 1.12,
                                   textAlign: "center",
                                   overflow:
                                     renderMode === "export"
@@ -884,7 +923,7 @@ export function WallpaperTable({
                             ) : null}
                             {showCourseNameDetails ? (
                               <div
-                                className="mt-0.5 max-w-full whitespace-normal wrap-break-word text-[6.3px] leading-[1.1] font-medium"
+                                className="max-w-full whitespace-normal wrap-break-word text-[6.3px] leading-[1.1] font-medium"
                                 style={{
                                   color: tableSubtleText,
                                   textAlign: "center",
@@ -894,7 +933,7 @@ export function WallpaperTable({
                             ) : null}
                             {showLecturerDetails ? (
                               <div
-                                className="max-w-full whitespace-normal wrap-break-word text-[5.75px] leading-[1.1] mt-0.5 font-medium"
+                                className="max-w-full whitespace-normal wrap-break-word text-[5.75px] leading-[1.1] font-medium"
                                 style={{
                                   color: tableSubtleText,
                                   textAlign: "center",
@@ -907,13 +946,13 @@ export function WallpaperTable({
                             ) : null}
                             {showTimeDetails ? (
                               <div
-                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-medium"
+                                className="max-w-full overflow-hidden whitespace-normal wrap-break-word font-medium"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.92)"
                                     : "rgba(15, 23, 42, 0.82)",
                                   fontSize: exportTimeTextSize,
-                                  lineHeight: 1.12,
+                                  lineHeight: isExportMode ? 1.04 : 1.12,
                                   textAlign: "center",
                                   overflow:
                                     renderMode === "export"
