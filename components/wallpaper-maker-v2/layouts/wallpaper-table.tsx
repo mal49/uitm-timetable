@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { TimetableEntry } from "@/lib/types";
 import { useWallpaper } from "../wallpaper-context";
 import { getThemePreset } from "../themes/theme-presets";
@@ -16,6 +16,7 @@ const MIN_VISIBLE_HOUR = 7;
 const MAX_VISIBLE_HOUR = 22;
 const MIN_HOUR_SPAN = 8;
 const POSITION_SLOT_MINUTES = 30;
+const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
 
 function getDayIndex(day: string): number {
   const value = day.trim().toLowerCase();
@@ -74,18 +75,14 @@ function getPerceivedBrightness(value: string): number {
   return (r * 299 + g * 587 + b * 114) / 1000;
 }
 
-function formatVenueLabel(
-  venue: string,
-  options?: { truncate?: boolean },
-): string {
-  void options;
+function formatVenueLabel(venue: string): string {
   return venue.trim().replace(/\s+/g, " ");
 }
 
 function formatTimeLabel(start: string, end: string): string {
   if (!start && !end) return "";
   if (!end) return start;
-  return `${start}-${end}`;
+  return `${start} - ${end}`;
 }
 
 type TableBlock = {
@@ -181,13 +178,34 @@ export function WallpaperTable({
 }: WallpaperTableProps) {
   const { settings } = useWallpaper();
   const isPreview = renderMode === "preview";
-  const showPreviewCourseCode = true;
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const showPreviewDayLabels = true;
   const showPreviewTimeIndicators = true;
   const theme = getThemePreset(settings.themeId, settings.customBackground);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
+    const updateViewportState = () => {
+      setIsMobileViewport(mediaQuery.matches);
+    };
+
+    updateViewportState();
+    mediaQuery.addEventListener("change", updateViewportState);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateViewportState);
+    };
+  }, []);
+
   const activeDays = useMemo(() => {
     const used = DAYS.filter((day) =>
-      entries.some((entry) => getDayIndex(entry.day || "") === DAYS.indexOf(day)),
+      entries.some(
+        (entry) => getDayIndex(entry.day || "") === DAYS.indexOf(day),
+      ),
     );
     return used.length > 0 ? used : DAYS;
   }, [entries]);
@@ -202,10 +220,11 @@ export function WallpaperTable({
       titleSize: "12px",
       headerRowHeight: "22px",
       dayLabelSize: "9px",
-      timeColumnWidth:
-        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
-          ? "24px"
-          : "0px",
+      timeColumnWidth: (
+        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
+      )
+        ? "24px"
+        : "0px",
       timeLabelSize: "5.5px",
       minCardHeight: "34px",
       cardPaddingX: "4px",
@@ -227,10 +246,11 @@ export function WallpaperTable({
       titleSize: "13px",
       headerRowHeight: "24px",
       dayLabelSize: "10px",
-      timeColumnWidth:
-        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
-          ? "28px"
-          : "0px",
+      timeColumnWidth: (
+        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
+      )
+        ? "28px"
+        : "0px",
       timeLabelSize: "6px",
       minCardHeight: "38px",
       cardPaddingX: "6px",
@@ -252,10 +272,11 @@ export function WallpaperTable({
       titleSize: "13px",
       headerRowHeight: "26px",
       dayLabelSize: "10px",
-      timeColumnWidth:
-        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
-          ? "30px"
-          : "0px",
+      timeColumnWidth: (
+        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
+      )
+        ? "30px"
+        : "0px",
       timeLabelSize: "6.2px",
       minCardHeight: "42px",
       cardPaddingX: "7px",
@@ -277,10 +298,11 @@ export function WallpaperTable({
       titleSize: "14px",
       headerRowHeight: "28px",
       dayLabelSize: "10.5px",
-      timeColumnWidth:
-        (isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators)
-          ? "32px"
-          : "0px",
+      timeColumnWidth: (
+        isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators
+      )
+        ? "32px"
+        : "0px",
       timeLabelSize: "6.4px",
       minCardHeight: "46px",
       cardPaddingX: "8px",
@@ -404,10 +426,8 @@ export function WallpaperTable({
           return {
             id: `${entry.day}-${entry.start}-${entry.end}-${courseCode}`,
             dayIndex,
-            startSlot:
-              (clippedStart - startMinutes) / POSITION_SLOT_MINUTES,
-            slotSpan:
-              (clippedEnd - clippedStart) / POSITION_SLOT_MINUTES,
+            startSlot: (clippedStart - startMinutes) / POSITION_SLOT_MINUTES,
+            slotSpan: (clippedEnd - clippedStart) / POSITION_SLOT_MINUTES,
             durationMinutes: clippedEnd - clippedStart,
             courseCode: normalizedCourseCode,
             subjectName: entry.subjectName || "",
@@ -489,11 +509,11 @@ export function WallpaperTable({
           className="grid text-[10px]"
           style={{
             height: `calc(100% - ${densityConfig.titleHeightPx}px)`,
-                gridTemplateRows: (isPreview
-                  ? showPreviewDayLabels
-                  : settings.showDayLabels)
-                  ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
-                  : "minmax(0, 1fr)",
+            gridTemplateRows: (
+              isPreview ? showPreviewDayLabels : settings.showDayLabels
+            )
+              ? `${densityConfig.headerRowHeight} minmax(0, 1fr)`
+              : "minmax(0, 1fr)",
           }}>
           {(isPreview ? showPreviewDayLabels : settings.showDayLabels) ? (
             <div
@@ -526,7 +546,11 @@ export function WallpaperTable({
             style={{
               gridTemplateColumns: `${timeColumnWidth} repeat(${dayCount}, minmax(0, 1fr))`,
             }}>
-            {(isPreview ? showPreviewTimeIndicators : settings.showTimeIndicators) ? (
+            {(
+              isPreview
+                ? showPreviewTimeIndicators
+                : settings.showTimeIndicators
+            ) ? (
               <div
                 className="grid"
                 style={{
@@ -588,16 +612,15 @@ export function WallpaperTable({
                       (() => {
                         const isCompact = block.durationMinutes <= 75;
                         const isTight = isCompact || block.columnCount > 1;
-                        const allowExportSupportingDetails =
-                          renderMode === "export" && block.columnCount === 1;
-                        const venueLabel = formatVenueLabel(block.venue, {
-                          truncate: !allowExportSupportingDetails,
-                        });
-                        const timeLabel = !isPreview && settings.showTime
-                          ? formatTimeLabel(block.start, block.end)
-                          : "";
+                        const venueLabel = formatVenueLabel(block.venue);
+                        const timeLabel = formatTimeLabel(
+                          block.start,
+                          block.end,
+                        );
                         const baseCodeTextSize = Number.parseFloat(
-                          isTight ? densityConfig.codeTight : densityConfig.codeNormal,
+                          isTight
+                            ? densityConfig.codeTight
+                            : densityConfig.codeNormal,
                         );
                         const codeLength = block.courseCode.length;
                         const blockWidthScore = Math.sqrt(
@@ -644,7 +667,9 @@ export function WallpaperTable({
                         const previewTightCodePenalty =
                           renderMode === "preview" &&
                           isPortrait &&
-                          (isOneHourBlock || block.columnCount > 1 || dayCount >= 6)
+                          (isOneHourBlock ||
+                            block.columnCount > 1 ||
+                            dayCount >= 6)
                             ? codeLength >= 6
                               ? 0.92
                               : 0.96
@@ -672,7 +697,9 @@ export function WallpaperTable({
                           codeFitScaleX *
                             (renderMode === "preview" &&
                             isPortrait &&
-                            (isOneHourBlock || block.columnCount > 1 || dayCount >= 6)
+                            (isOneHourBlock ||
+                              block.columnCount > 1 ||
+                              dayCount >= 6)
                               ? 0.9
                               : 1),
                           0.54,
@@ -695,41 +722,44 @@ export function WallpaperTable({
                             2.1,
                           )
                         ).toFixed(2)}px`;
+                        const showCourseCode =
+                          isPreview || settings.showCourseCode;
+                        const showSupportingDetails =
+                          !isMobileViewport && !isOneHourBlock;
                         const showVenueDetails =
-                          allowExportSupportingDetails &&
+                          showSupportingDetails &&
                           settings.showVenue &&
-                          !!venueLabel;
+                          Boolean(venueLabel);
                         const showTimeDetails =
-                          allowExportSupportingDetails &&
+                          showSupportingDetails &&
                           settings.showTime &&
-                          !!timeLabel;
+                          Boolean(timeLabel);
+                        const showCourseNameDetails =
+                          showSupportingDetails &&
+                          !isCompact &&
+                          settings.showCourseName &&
+                          Boolean(block.subjectName);
                         const showLecturerDetails =
-                          allowExportSupportingDetails &&
+                          showSupportingDetails &&
+                          !isCompact &&
                           settings.showLecturer &&
-                          !!block.lecturer;
-                        const exportDetailsScale =
-                          renderMode === "export" ? 0.72 : 1;
+                          Boolean(block.lecturer);
                         const venueTextSize = `${(
                           Number.parseFloat(
-                            isTight ? densityConfig.venueTight : densityConfig.venueNormal,
-                          ) *
-                          clamp(readableBoost * 0.82, 0.9, 1.28) *
-                          exportDetailsScale
+                            isTight
+                              ? densityConfig.venueTight
+                              : densityConfig.venueNormal,
+                          ) * clamp(readableBoost * 0.86, 0.96, 1.45)
                         ).toFixed(2)}px`;
                         const timeTextSize = `${(
                           Number.parseFloat(
-                            isTight ? densityConfig.timeTight : densityConfig.timeNormal,
-                          ) *
-                          clamp(readableBoost * 0.86, 0.92, 1.32) *
-                          exportDetailsScale
+                            isTight
+                              ? densityConfig.timeTight
+                              : densityConfig.timeNormal,
+                          ) * clamp(readableBoost * 0.9, 0.98, 1.5)
                         ).toFixed(2)}px`;
-                        const supportingDetailsMaxLines =
+                        const supportingDetailsLineClamp =
                           renderMode === "export" ? 2 : 1;
-                        const exportCardAlignment = "center";
-                        const exportCardGap =
-                          renderMode === "export" ? "2px" : "0px";
-                        const exportDetailMinHeight =
-                          renderMode === "export" ? "2.1em" : undefined;
 
                         const widthPercent = 100 / block.columnCount;
                         const inset = 2;
@@ -750,7 +780,7 @@ export function WallpaperTable({
                         return (
                           <div
                             key={block.id}
-                            className="absolute flex flex-col items-center overflow-hidden rounded-[10px] border-2 text-center"
+                            className="absolute flex flex-col items-center justify-center overflow-hidden rounded-[10px] border-2 text-center"
                             style={{
                               top: `calc((100% / ${scheduleMetrics.totalSlots}) * ${block.startSlot} + ${verticalInset}px)`,
                               left: `calc(${block.columnIndex * widthPercent}% + ${inset}px)`,
@@ -764,12 +794,10 @@ export function WallpaperTable({
                               backgroundColor: isDarkOverlay
                                 ? "rgba(255, 255, 255, 0.08)"
                                 : toSoftTint(block.borderColor, 0.24),
-                              boxShadow: "none",
-                              justifyContent: exportCardAlignment,
-                              gap: exportCardGap,
+                              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.10)",
                               zIndex: 1,
                             }}>
-                            {(isPreview ? showPreviewCourseCode : settings.showCourseCode) ? (
+                            {showCourseCode ? (
                               <div
                                 className="max-w-full overflow-hidden whitespace-nowrap font-black"
                                 style={{
@@ -788,33 +816,28 @@ export function WallpaperTable({
                             ) : null}
                             {showVenueDetails ? (
                               <div
-                                className="max-w-full overflow-hidden whitespace-normal font-semibold"
+                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-semibold"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.96)"
                                     : "rgba(15, 23, 42, 0.86)",
                                   fontSize: venueTextSize,
-                                  lineHeight: 1.05,
-                                  minHeight: exportDetailMinHeight,
-                                  maxHeight:
-                                    renderMode === "export"
-                                      ? `${supportingDetailsMaxLines * 1.05}em`
-                                      : undefined,
-                                  overflowWrap:
-                                    renderMode === "export" ? "anywhere" : "break-word",
-                                  wordBreak:
-                                    renderMode === "export" ? "break-word" : "normal",
+                                  lineHeight: 1.12,
                                   textAlign: "center",
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: supportingDetailsLineClamp,
+                                  WebkitBoxOrient: "vertical",
                                 }}>
                                 {venueLabel}
                               </div>
                             ) : null}
-                            {!isCompact &&
-                            settings.showCourseName &&
-                            block.subjectName ? (
+                            {showCourseNameDetails ? (
                               <div
                                 className="mt-0.5 max-w-full whitespace-normal wrap-break-word text-[6.3px] leading-[1.1] font-medium"
-                                style={{ color: tableSubtleText, textAlign: "center" }}>
+                                style={{
+                                  color: tableSubtleText,
+                                  textAlign: "center",
+                                }}>
                                 {block.subjectName}
                               </div>
                             ) : null}
@@ -823,33 +846,27 @@ export function WallpaperTable({
                                 className="max-w-full whitespace-normal wrap-break-word text-[5.75px] leading-[1.1] mt-0.5 font-medium"
                                 style={{
                                   color: tableSubtleText,
+                                  textAlign: "center",
                                   display: "-webkit-box",
                                   WebkitLineClamp: 1,
                                   WebkitBoxOrient: "vertical",
-                                  textAlign: "center",
                                 }}>
                                 {block.lecturer}
                               </div>
                             ) : null}
                             {showTimeDetails ? (
                               <div
-                                className="max-w-full overflow-hidden whitespace-normal font-medium"
+                                className="mt-0.5 max-w-full overflow-hidden whitespace-normal wrap-break-word font-medium"
                                 style={{
                                   color: isDarkOverlay
                                     ? "rgba(248, 250, 252, 0.92)"
                                     : "rgba(15, 23, 42, 0.82)",
                                   fontSize: timeTextSize,
-                                  lineHeight: 1.05,
-                                  minHeight: exportDetailMinHeight,
-                                  maxHeight:
-                                    renderMode === "export"
-                                      ? `${supportingDetailsMaxLines * 1.05}em`
-                                      : undefined,
-                                  overflowWrap:
-                                    renderMode === "export" ? "anywhere" : "break-word",
-                                  wordBreak:
-                                    renderMode === "export" ? "break-word" : "normal",
+                                  lineHeight: 1.12,
                                   textAlign: "center",
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: supportingDetailsLineClamp,
+                                  WebkitBoxOrient: "vertical",
                                 }}>
                                 {timeLabel}
                               </div>
