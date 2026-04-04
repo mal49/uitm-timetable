@@ -725,7 +725,8 @@ export function WallpaperTable({
                         const showCourseCode =
                           isPreview || settings.showCourseCode;
                         const showSupportingDetails =
-                          !isMobileViewport && !isOneHourBlock;
+                          !(renderMode === "preview" && isMobileViewport) &&
+                          !isOneHourBlock;
                         const showVenueDetails =
                           showSupportingDetails &&
                           settings.showVenue &&
