@@ -16,11 +16,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useWallpaper } from "./wallpaper-context";
+import {
+  getDevicePreset,
+  getLandscapeRightPadding,
+} from "./device-presets";
 import { WallpaperTable } from "./layouts/wallpaper-table";
 import { getThemePreset } from "./themes/theme-presets";
-
-const PORTRAIT_EXPORT_SIZE = { width: 390, height: 844 };
-const LANDSCAPE_EXPORT_SIZE = { width: 844, height: 390 };
 
 type PreviewConfig = {
   imageSrc: string;
@@ -126,6 +127,29 @@ function getContentPaddingStyle(
     paddingBottom: config.contentPadding.bottom,
     paddingLeft: config.contentPadding.left ?? "0px",
     paddingRight: config.contentPadding.right ?? "0px",
+  };
+}
+
+function getExportContentPaddingStyle(
+  deviceId: string,
+  orientation: "portrait" | "landscape",
+  layoutStyle: "wallpaper-table",
+  showWidgetPosition: boolean,
+): CSSProperties {
+  const devicePreset = getDevicePreset(deviceId);
+  const exportMetrics = devicePreset.export[orientation];
+
+  return {
+    boxSizing: "border-box",
+    paddingTop: showWidgetPosition
+      ? exportMetrics.paddingTopWithWidget
+      : exportMetrics.paddingTop,
+    paddingBottom: exportMetrics.paddingBottom,
+    paddingLeft: exportMetrics.paddingLeft,
+    paddingRight:
+      orientation === "landscape"
+        ? getLandscapeRightPadding(layoutStyle, devicePreset.kind)
+        : "0px",
   };
 }
 
@@ -305,6 +329,8 @@ function PreviewDevice({
 export function PreviewPanel() {
   const { settings, entries, colorOverrides, updateSettings } = useWallpaper();
   const theme = getThemePreset(settings.themeId, settings.customBackground);
+  const devicePreset = getDevicePreset(settings.deviceId);
+  const exportMetrics = devicePreset.export[settings.orientation];
   const exportRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState("");
@@ -315,7 +341,6 @@ export function PreviewPanel() {
   const previewConfig = isPortrait
     ? PORTRAIT_PREVIEW_CONFIG
     : LANDSCAPE_PREVIEW_CONFIG;
-  const exportSize = isPortrait ? PORTRAIT_EXPORT_SIZE : LANDSCAPE_EXPORT_SIZE;
   const fontWeightMap: Record<typeof settings.fontWeight, number> = {
     light: 300,
     regular: 400,
@@ -339,6 +364,12 @@ export function PreviewPanel() {
     previewConfig,
     settings.showWidgetPosition,
   );
+  const exportContentPaddingStyle = getExportContentPaddingStyle(
+    settings.deviceId,
+    settings.orientation,
+    settings.layoutStyle,
+    settings.showWidgetPosition,
+  );
 
   async function handleExport() {
     if (!exportRef.current || isExporting) {
@@ -350,7 +381,7 @@ export function PreviewPanel() {
 
     try {
       const blob = await toBlob(exportRef.current, {
-        pixelRatio: 3,
+        pixelRatio: exportMetrics.pixelRatio,
         quality: settings.exportQuality,
         cacheBust: true,
         skipFonts: true,
@@ -457,13 +488,13 @@ export function PreviewPanel() {
           ref={exportRef}
           className="relative overflow-hidden"
           style={{
-            width: exportSize.width,
-            height: exportSize.height,
+            width: exportMetrics.width,
+            height: exportMetrics.height,
             ...sceneStyle,
           }}>
           <div
             className="h-full w-full overflow-hidden"
-            style={contentPaddingStyle}>
+            style={exportContentPaddingStyle}>
             <WallpaperTable
               entries={entries}
               colorOverrides={colorOverrides}
