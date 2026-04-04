@@ -78,38 +78,8 @@ function formatVenueLabel(
   venue: string,
   options?: { truncate?: boolean },
 ): string {
-  const trimmed = venue.trim();
-  if (!trimmed) return "";
-  const shouldTruncate = options?.truncate ?? true;
-
-  if (/online/i.test(trimmed)) return "Online";
-  if (/virtual\s*lab/i.test(trimmed)) return "Virtual Lab";
-
-  const labCodeMatch = trimmed.match(
-    /\b(MK|DK|BK|SK|BILIK)\s*-?\s*(\d+[A-Z]?)\b/i,
-  );
-  if (labCodeMatch) {
-    const [, prefix, number] = labCodeMatch;
-    return `${prefix.toUpperCase()}${number.toUpperCase()}`;
-  }
-
-  const multimediaMatch = trimmed.match(/\bmultimedia\b/i);
-  if (multimediaMatch) return "Multimedia";
-
-  const tokens = trimmed.replace(/[(),]/g, " ").split(/\s+/).filter(Boolean);
-
-  if (tokens.length === 1) {
-    return shouldTruncate && tokens[0].length > 12
-      ? `${tokens[0].slice(0, 12)}...`
-      : tokens[0];
-  }
-
-  const compact = tokens.slice(0, 2).join(" ");
-  if (!shouldTruncate) {
-    return trimmed.replace(/\s+/g, " ");
-  }
-
-  return compact.length > 16 ? `${compact.slice(0, 16)}...` : compact;
+  void options;
+  return venue.trim().replace(/\s+/g, " ");
 }
 
 function formatTimeLabel(start: string, end: string): string {
