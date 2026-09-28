@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,9 +32,21 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+    width: number;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const normalizedFilter = normalizeFilterText(filter);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filtered =
     normalizedFilter === ""
@@ -48,7 +61,10 @@ export function Combobox({
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const insideContainer = containerRef.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+      if (!insideContainer && !insideDropdown) {
         setOpen(false);
         setFilter("");
       }
@@ -63,6 +79,27 @@ export function Combobox({
     }
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open) return;
+    function updatePosition() {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      setPosition({
+        left: rect.left,
+        top: rect.bottom + 4,
+        width: rect.width,
+      });
+    }
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open]);
+
   function handleSelect(code: string) {
     onChange(code);
     setOpen(false);
@@ -75,10 +112,98 @@ export function Combobox({
     if (open) setFilter("");
   }
 
+  const dropdown =
+    open && mounted && position
+      ? createPortal(
+          <div
+            ref={dropdownRef}
+            style={{
+              position: "fixed",
+              left: position.left,
+              top: position.top,
+              width: position.width,
+            }}
+            className="z-50 overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg"
+          >
+            {/* Search */}
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+              <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <input
+                ref={inputRef}
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setOpen(false);
+                    setFilter("");
+                  }
+                }}
+                placeholder="Search…"
+                autoComplete="off"
+                spellCheck={false}
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+
+            {/* Options */}
+            <ul role="listbox" className="max-h-56 overflow-y-auto py-1">
+              {filtered.length > 0 ? (() => {
+                const rendered: React.ReactNode[] = [];
+                let lastGroup: string | undefined = undefined;
+                let groupIndex = 0;
+                filtered.forEach((opt) => {
+                  const optionKey = `${opt.code}::${opt.fullname}`;
+                  if (opt.group !== lastGroup) {
+                    lastGroup = opt.group;
+                    rendered.push(
+                      <li
+                        key={`group-${opt.group ?? "default"}-${groupIndex++}`}
+                        role="presentation"
+                        className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 select-none"
+                      >
+                        {opt.group ?? "Campuses"}
+                      </li>
+                    );
+                  }
+                  rendered.push(
+                    <li
+                      key={optionKey}
+                      role="option"
+                      aria-selected={opt.code === value}
+                      onClick={() => handleSelect(opt.code)}
+                      className={cn(
+                        "relative flex w-full cursor-pointer select-none items-center gap-2.5 px-3 py-2 text-sm outline-none",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        opt.code === value && "bg-accent/50"
+                      )}
+                    >
+                      <span className="w-8 shrink-0 font-mono text-xs text-muted-foreground">
+                        {opt.code}
+                      </span>
+                      <span className="flex-1 truncate">{opt.fullname}</span>
+                      {opt.code === value && (
+                        <Check className="absolute right-3 h-3.5 w-3.5 text-primary" />
+                      )}
+                    </li>
+                  );
+                });
+                return rendered;
+              })() : (
+                <li className="px-3 py-4 text-center text-sm text-muted-foreground">
+                  No results for &ldquo;{filter}&rdquo;
+                </li>
+              )}
+            </ul>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <div ref={containerRef} className="relative w-full">
       {/* Trigger */}
       <button
+        ref={triggerRef}
         id={id}
         type="button"
         disabled={disabled}
@@ -113,80 +238,7 @@ export function Combobox({
         />
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg">
-          {/* Search */}
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-            <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <input
-              ref={inputRef}
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setOpen(false);
-                  setFilter("");
-                }
-              }}
-              placeholder="Search…"
-              autoComplete="off"
-              spellCheck={false}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-
-          {/* Options */}
-          <ul role="listbox" className="max-h-56 overflow-y-auto py-1">
-            {filtered.length > 0 ? (() => {
-              const rendered: React.ReactNode[] = [];
-              let lastGroup: string | undefined = undefined;
-              let groupIndex = 0;
-              filtered.forEach((opt) => {
-                const optionKey = `${opt.code}::${opt.fullname}`;
-                if (opt.group !== lastGroup) {
-                  lastGroup = opt.group;
-                  rendered.push(
-                    <li
-                      key={`group-${opt.group ?? "default"}-${groupIndex++}`}
-                      role="presentation"
-                      className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 select-none"
-                    >
-                      {opt.group ?? "Campuses"}
-                    </li>
-                  );
-                }
-                rendered.push(
-                  <li
-                    key={optionKey}
-                    role="option"
-                    aria-selected={opt.code === value}
-                    onClick={() => handleSelect(opt.code)}
-                    className={cn(
-                      "relative flex w-full cursor-pointer select-none items-center gap-2.5 px-3 py-2 text-sm outline-none",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      opt.code === value && "bg-accent/50"
-                    )}
-                  >
-                    <span className="w-8 shrink-0 font-mono text-xs text-muted-foreground">
-                      {opt.code}
-                    </span>
-                    <span className="flex-1 truncate">{opt.fullname}</span>
-                    {opt.code === value && (
-                      <Check className="absolute right-3 h-3.5 w-3.5 text-primary" />
-                    )}
-                  </li>
-                );
-              });
-              return rendered;
-            })() : (
-              <li className="px-3 py-4 text-center text-sm text-muted-foreground">
-                No results for &ldquo;{filter}&rdquo;
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
+      {dropdown}
     </div>
   );
 }

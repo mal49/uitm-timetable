@@ -1,88 +1,145 @@
-import { CalendarX2 } from "lucide-react";
-import type { SubjectItem } from "@/app/_home/types";
-import { SubjectCard } from "@/app/_home/components/subject-card";
+import { CalendarX2, CircleCheck, Clock, Plus, TriangleAlert, Wand2 } from "lucide-react";
+import type { ReactNode } from "react";
+import { SubjectRow } from "@/app/_home/components/subject-card";
+import type { HomePageState } from "@/app/_home/use-home-page";
+import { minutesToLabel, timeToMinutes } from "@/app/_home/utils";
+import { cn } from "@/lib/utils";
 
-type SubjectsPanelProps = {
-  items: SubjectItem[];
-  subjectColorOverrides: Record<string, string>;
-  subjectColorDrafts: Record<string, string>;
-  groupKeys: (grouped?: SubjectItem["grouped"]) => string[];
-  onRemoveItem: (itemId: string) => void;
-  onSetSubjectColor: (course: string, value: string) => void;
-  onSetSubjectColorDraft: (course: string, value: string) => void;
-  onCommitSubjectColorDraft: (course: string) => void;
-  onChooseMatch: (itemId: string, path: string) => void;
-  onToggleShowSelectedOnly: (itemId: string) => void;
-  onClearGroups: (itemId: string) => void;
-  onSetGroupFilter: (itemId: string, value: string) => void;
-  onSelectGroup: (itemId: string, group: string) => void;
+const WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export function SubjectsStep({ home }: { home: HomePageState }) {
+  const imported = home.items.find((item) => item.source === "mystudent");
+  const subtitle = imported
+    ? `Imported from MyStudent${imported.importedAt ? ` · ${home.formatImportTimestampLabel(imported.importedAt)}` : ""}`
+    : `${home.items.length} subject${home.items.length === 1 ? "" : "s"} in your build`;
+
+  return (
+    <div className="mx-auto grid max-w-[1440px] gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8 lg:py-8">
+      <section aria-labelledby="subjects-title" className="min-w-0">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 id="subjects-title" className="text-2xl font-bold tracking-[-0.01em]">Your subjects</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+          </div>
+          <div className="flex gap-2">
+            {home.items.length > 0 ? (
+              <button type="button" onClick={home.clearAll} className="h-10 rounded-xl px-4 text-sm hover:bg-muted">
+                Clear all
+              </button>
+            ) : null}
+            <button type="button" onClick={() => home.setStep(0)} className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-muted px-4 text-sm font-medium hover:bg-surface-3">
+              <Plus aria-hidden="true" className="size-4" />
+              Add subject
+            </button>
+          </div>
+        </div>
+
+        {home.items.length > 0 ? (
+          <ul className="mt-4 divide-y divide-border overflow-hidden rounded-[20px] border border-border bg-card">
+            {home.items.map((item) => (
+              <SubjectRow
+                key={item.id}
+                item={item}
+                color={home.subjectColors[item.course] ?? "#b9a3f0"}
+                colorDraft={home.subjectColorDrafts[item.course] ?? home.subjectColors[item.course] ?? ""}
+                expanded={home.expandedId === item.id}
+                others={home.combinedEntries.filter((entry) => entry.course !== item.course)}
+                onToggle={() => home.setExpandedId(home.expandedId === item.id ? null : item.id)}
+                onRemove={() => home.removeItem(item.id)}
+                onSelectGroup={(group) => home.selectGroup(item.id, group)}
+                onSetGroupFilter={(value) => home.setGroupFilter(item.id, value)}
+                onSetColor={(value) => home.setSubjectColor(item.course, value)}
+                onSetColorDraft={(value) => home.setSubjectColorDraft(item.course, value)}
+                onCommitColorDraft={() => home.commitSubjectColorDraft(item.course)}
+              />
+            ))}
+          </ul>
+        ) : (
+          <div className="mt-4 flex flex-col items-center rounded-[20px] border border-border bg-card px-6 py-14 text-center">
+            <CalendarX2 aria-hidden="true" className="size-8 text-faint" />
+            <p className="mt-3 font-semibold">No subjects yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">Import with your student ID or search by course code.</p>
+          </div>
+        )}
+      </section>
+
+      <aside aria-label="Checks" className="space-y-3 lg:pt-[3px]">
+        <Checks home={home} />
+        {home.clashFix ? (
+          <button
+            type="button"
+            onClick={() => home.selectGroup(home.clashFix!.itemId, home.clashFix!.group)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-destructive/15 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/25"
+          >
+            <Wand2 aria-hidden="true" className="size-4" />
+            Fix clash: switch {home.clashFix.course} to {home.clashFix.group}
+          </button>
+        ) : null}
+      </aside>
+    </div>
+  );
+}
+
+function Checks({ home }: { home: HomePageState }) {
+  const entries = home.combinedEntries;
+  const pairs = home.clashPairs;
+  const missingGroup = home.items.filter((item) => !item.selectedGroup).length;
+  const starts = entries.map((entry) => timeToMinutes(entry.start));
+  const ends = entries.map((entry) => timeToMinutes(entry.end));
+  const freeDays = WEEK.filter((day) => !entries.some((entry) => entry.day === day));
+
+  const clashDays = [...new Set(pairs.map(({ a }) => a.day))];
+  const first = pairs[0];
+
+  return (
+    <div className="rounded-[20px] border border-border bg-card p-5">
+      <h2 className="text-[17px] font-semibold">Checks</h2>
+      <ul className="mt-4 space-y-4">
+        {first ? (
+          <Check tone="danger" icon={<TriangleAlert />} title={`${pairs.length} clash${pairs.length === 1 ? "" : "es"} on ${clashDays.join(", ")}`}>
+            {first.b.section} overlaps {first.a.course} at {minutesToLabel(Math.max(timeToMinutes(first.a.start), timeToMinutes(first.b.start)))}.
+            {home.clashFix ? ` Pick ${home.clashFix.group} for ${home.clashFix.course} to fix it.` : ""}
+          </Check>
+        ) : (
+          <Check tone="success" icon={<CircleCheck />} title="No clashes">
+            All groups fit your week.
+          </Check>
+        )}
+        {missingGroup > 0 ? (
+          <Check tone="warning" icon={<TriangleAlert />} title={`${missingGroup} subject${missingGroup === 1 ? " needs" : "s need"} a group`}>
+            Open a subject and pick a group to add it to your canvas.
+          </Check>
+        ) : entries.length > 0 ? (
+          <Check tone="success" icon={<CircleCheck />} title="Every subject has a group">
+            {entries.length} sessions in your build.
+          </Check>
+        ) : null}
+        {entries.length > 0 ? (
+          <Check tone="info" icon={<Clock />} title={`Earliest class ${minutesToLabel(Math.min(...starts))}`}>
+            Latest ends {minutesToLabel(Math.max(...ends))}
+            {freeDays.length > 0 ? ` · ${freeDays.join(", ")} free` : ""}
+          </Check>
+        ) : null}
+      </ul>
+    </div>
+  );
+}
+
+const TONES = {
+  danger: "bg-destructive/15 text-destructive",
+  success: "bg-success/15 text-success",
+  warning: "bg-warning/15 text-warning",
+  info: "bg-info/15 text-info",
 };
 
-export function SubjectsPanel({
-  items,
-  subjectColorOverrides,
-  subjectColorDrafts,
-  groupKeys,
-  onRemoveItem,
-  onSetSubjectColor,
-  onSetSubjectColorDraft,
-  onCommitSubjectColorDraft,
-  onChooseMatch,
-  onToggleShowSelectedOnly,
-  onClearGroups,
-  onSetGroupFilter,
-  onSelectGroup,
-}: SubjectsPanelProps) {
+function Check({ tone, icon, title, children }: { tone: keyof typeof TONES; icon: ReactNode; title: string; children: ReactNode }) {
   return (
-    <div className="rounded-[2rem] bg-white p-5 shadow-[0_24px_60px_rgba(31,41,55,0.08)] ring-1 ring-slate-200/70 sm:p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Subjects
-          </p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
-            Build your schedule
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            Pick the right subject result, lock in your groups, and set colors before
-            sending everything into the wallpaper maker.
-          </p>
-        </div>
+    <li className="flex gap-3">
+      <span aria-hidden="true" className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg [&_svg]:size-4", TONES[tone])}>{icon}</span>
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{title}</p>
+        <p className="mt-0.5 text-xs leading-[1.5] text-muted-foreground">{children}</p>
       </div>
-
-      {items.length > 0 ? (
-        <div className="-mr-1 mt-5 grid max-h-140 gap-3 overflow-y-auto pr-1 sm:-mr-2 sm:pr-2 xl:grid-cols-2">
-          {items.map((item) => (
-            <SubjectCard
-              key={item.id}
-              item={item}
-              groups={groupKeys(item.grouped)}
-              colorValue={subjectColorOverrides[item.course] ?? ""}
-              colorDraft={subjectColorDrafts[item.course] ?? subjectColorOverrides[item.course] ?? ""}
-              onRemove={onRemoveItem}
-              onSetColor={onSetSubjectColor}
-              onSetColorDraft={onSetSubjectColorDraft}
-              onCommitColorDraft={onCommitSubjectColorDraft}
-              onChooseMatch={onChooseMatch}
-              onToggleShowSelectedOnly={onToggleShowSelectedOnly}
-              onClearGroups={onClearGroups}
-              onSetGroupFilter={onSetGroupFilter}
-              onSelectGroup={onSelectGroup}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="mt-5 flex min-h-70 flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-[#faf7f0] px-5 py-10 text-center">
-          <CalendarX2 className="h-10 w-10 text-slate-300" />
-          <p className="mt-3 text-base font-semibold text-slate-900">
-            No subjects added yet
-          </p>
-          <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-            Add your first course code above to start building your schedule
-            wallpaper.
-          </p>
-        </div>
-      )}
-    </div>
+    </li>
   );
 }

@@ -1,11 +1,12 @@
 import { toBlob } from "html-to-image";
-import { useEffect, useRef, useState } from "react";
-import { fetchSubjects, fetchTimetableByPath } from "@/app/_home/api";
-import { IMPORT_STORAGE_KEY } from "@/app/_home/constants";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { IMPORT_STORAGE_KEY, PRESET_SUBJECT_HEX } from "@/app/_home/constants";
 import type { SavedImportState, SubjectItem, ViewMode } from "@/app/_home/types";
 import {
   buildSubjectItemsFromImport,
   buildCombinedEntries,
+  clashingCourse,
+  findClashPairs,
   formatImportTimestampLabel,
   groupKeys,
   makeId,
@@ -16,16 +17,27 @@ import {
   MYSTUDENT_IMPORT_SOURCE,
   type MyStudentImportResult,
 } from "@/lib/importers/mystudent";
-import type { SearchRequest } from "@/lib/types";
+import type { GroupedTimetable, SearchRequest } from "@/lib/types";
+
+export const STEPS = ["Import", "Subjects", "Canvas", "Wallpaper"] as const;
+export type Step = 0 | 1 | 2 | 3;
+
+export type SearchedSubject = {
+  request: SearchRequest;
+  course: string;
+  subjectName: string;
+  path: string;
+  grouped: GroupedTimetable;
+  selectedGroup: string;
+};
 
 export function useHomePage() {
+  const [step, setStep] = useState<Step>(0);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [items, setItems] = useState<SubjectItem[]>([]);
-  const [adding, setAdding] = useState(false);
-  const [globalError, setGlobalError] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [exportError, setExportError] = useState("");
   const [exporting, setExporting] = useState(false);
-  const [showClashesOnly, setShowClashesOnly] = useState(false);
   const [subjectColorOverrides, setSubjectColorOverrides] = useState<
     Record<string, string>
   >({});
@@ -35,7 +47,6 @@ export function useHomePage() {
   const [savedImport, setSavedImport] = useState<SavedImportState>(null);
 
   const timetableRef = useRef<HTMLDivElement | null>(null);
-  const exportRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     try {
@@ -51,155 +62,37 @@ export function useHomePage() {
         return;
       }
 
+      // Offered as "Welcome back" on the import step rather than auto-restored.
       setSavedImport(parsed);
-      setItems((prev) => {
-        if (prev.some((item) => item.source === "mystudent")) return prev;
-        return [...buildSubjectItemsFromImport(parsed), ...prev];
-      });
     } catch {
       // Ignore corrupted local data and allow a fresh import.
     }
   }, []);
 
-  async function handleAddSubject(data: SearchRequest) {
-    setGlobalError("");
-    setAdding(true);
-
-    const id = makeId();
-    const course = data.course.trim().toUpperCase();
-
-    const newItem: SubjectItem = {
-      id,
-      source: "search",
-      request: { ...data, course },
-      course,
-      status: "loading_subjects",
-      matches: [],
-      selectedGroup: null,
-      groupFilter: "",
-      showSelectedOnly: false,
-    };
-
-    setItems((prev) => [newItem, ...prev]);
-
-    try {
-      const subjects = await fetchSubjects({ ...data, course });
-      const matches = subjects.results ?? [];
-
-      if (matches.length === 0) {
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  status: "error",
-                  error: "No matching subject results found.",
-                }
-              : item,
-          ),
-        );
-        return;
-      }
-
-      if (matches.length === 1) {
-        const only = matches[0]!;
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  matches,
-                  selectedPath: only.path,
-                  subjectName: only.subject || course,
-                  status: "loading_timetable",
-                }
-              : item,
-          ),
-        );
-
-        const timetable = await fetchTimetableByPath({
-          path: only.path,
-          course,
-          subject: only.subject || course,
-        });
-
-        setItems((prev) =>
-          prev.map((item) =>
-            item.id === id
-              ? { ...item, grouped: timetable.grouped, status: "ready" }
-              : item,
-          ),
-        );
-        return;
-      }
-
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, matches, status: "choose_subject" } : item,
-        ),
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      setGlobalError(message);
-    } finally {
-      setAdding(false);
-    }
-  }
-
-  async function handleChooseMatch(itemId: string, path: string) {
-    const item = items.find((entry) => entry.id === itemId);
-    const match = item?.matches.find((entry) => entry.path === path);
-    const course = item?.course ?? "";
-    const subject = match?.subject || course;
-
-    setItems((prev) =>
-      prev.map((entry) =>
-        entry.id === itemId
-          ? {
-              ...entry,
-              selectedPath: path,
-              subjectName: subject,
-              status: "loading_timetable",
-              error: undefined,
-            }
-          : entry,
-      ),
-    );
-
-    try {
-      const timetable = await fetchTimetableByPath({ path, course, subject });
-      setItems((prev) =>
-        prev.map((entry) =>
-          entry.id === itemId
-            ? { ...entry, grouped: timetable.grouped, status: "ready" }
-            : entry,
-        ),
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setItems((prev) =>
-        prev.map((entry) =>
-          entry.id === itemId
-            ? { ...entry, status: "error", error: message }
-            : entry,
-        ),
-      );
-    }
+  function addSearchedSubject(subject: SearchedSubject) {
+    setItems((prev) => [
+      ...prev.filter((item) => item.selectedPath !== subject.path),
+      {
+        id: makeId(),
+        source: "search",
+        request: subject.request,
+        course: subject.course,
+        status: "ready",
+        matches: [],
+        selectedPath: subject.path,
+        subjectName: subject.subjectName,
+        grouped: subject.grouped,
+        selectedGroup: subject.selectedGroup,
+        groupFilter: "",
+        showSelectedOnly: false,
+      },
+    ]);
   }
 
   function selectGroup(itemId: string, group: string) {
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId ? { ...item, selectedGroup: group } : item,
-      ),
-    );
-  }
-
-  function clearGroups(itemId: string) {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, selectedGroup: null } : item,
       ),
     );
   }
@@ -212,18 +105,19 @@ export function useHomePage() {
     );
   }
 
-  function toggleShowSelectedOnly(itemId: string) {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId
-          ? { ...item, showSelectedOnly: !item.showSelectedOnly }
-          : item,
-      ),
-    );
-  }
-
   function removeItem(itemId: string) {
     setItems((prev) => prev.filter((item) => item.id !== itemId));
+  }
+
+  function clearAll() {
+    setItems([]);
+    setExpandedId(null);
+  }
+
+  /** Jump to the Subjects step with one subject opened (used from the canvas). */
+  function focusSubject(course: string) {
+    setExpandedId(items.find((item) => item.course === course)?.id ?? null);
+    setStep(1);
   }
 
   function setSubjectColor(course: string, hexColor: string) {
@@ -245,20 +139,21 @@ export function useHomePage() {
       return;
     }
 
-    setSubjectColorDrafts((prev) => ({
-      ...prev,
-      [course]: subjectColorOverrides[course] ?? "",
-    }));
+    setSubjectColorDrafts((prev) => {
+      const next = { ...prev };
+      delete next[course];
+      return next;
+    });
   }
 
   function handleConfirmMyStudentImport(result: MyStudentImportResult) {
     const importedItems = buildSubjectItemsFromImport(result);
     setSavedImport(result);
-    setGlobalError("");
     setItems((prev) => [
       ...importedItems,
       ...prev.filter((item) => item.source !== "mystudent"),
     ]);
+    setStep(1);
 
     try {
       window.localStorage.setItem(IMPORT_STORAGE_KEY, JSON.stringify(result));
@@ -274,6 +169,7 @@ export function useHomePage() {
       ...buildSubjectItemsFromImport(savedImport),
       ...prev.filter((item) => item.source !== "mystudent"),
     ]);
+    setStep(1);
   }
 
   function handleClearSavedImport() {
@@ -290,7 +186,7 @@ export function useHomePage() {
   async function exportTimetable() {
     setExportError("");
 
-    const node = exportRef.current ?? timetableRef.current;
+    const node = timetableRef.current;
     if (!node) {
       setExportError("Nothing to export yet.");
       return;
@@ -299,17 +195,9 @@ export function useHomePage() {
     try {
       setExporting(true);
 
-      const bodyBg =
-        typeof window !== "undefined"
-          ? window.getComputedStyle(document.body).backgroundColor
-          : "";
       const backgroundColor =
-        bodyBg && bodyBg !== "rgba(0, 0, 0, 0)" ? bodyBg : "#ffffff";
-
+        window.getComputedStyle(document.body).backgroundColor || "#000000";
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-      const baseName = `uitm-class-canvas-${stamp}-${viewMode}`;
-
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
       const blob = await toBlob(node, {
         cacheBust: true,
@@ -325,7 +213,7 @@ export function useHomePage() {
       const url = URL.createObjectURL(blob);
       try {
         const link = document.createElement("a");
-        link.download = `${baseName}.jpg`;
+        link.download = `uitm-class-canvas-${stamp}-${viewMode}.jpg`;
         link.href = url;
         document.body.appendChild(link);
         link.click();
@@ -341,45 +229,69 @@ export function useHomePage() {
     }
   }
 
-  const combinedEntries = markClashes(buildCombinedEntries(items));
-  const displayedEntries = showClashesOnly
-    ? combinedEntries.filter((entry) => entry.isClash)
-    : combinedEntries;
-  const clashCount = combinedEntries.filter((entry) => entry.isClash).length;
+  const combinedEntries = useMemo(
+    () => markClashes(buildCombinedEntries(items)),
+    [items],
+  );
+  const clashPairs = findClashPairs(combinedEntries);
+
+  const subjectColors = useMemo(
+    () =>
+      Object.fromEntries(
+        items.map((item, index) => [
+          item.course,
+          subjectColorOverrides[item.course] ??
+            PRESET_SUBJECT_HEX[index % PRESET_SUBJECT_HEX.length]!,
+        ]),
+      ),
+    [items, subjectColorOverrides],
+  );
+
+  // First clashing subject that has a clash-free alternative group.
+  let clashFix: { itemId: string; course: string; group: string } | null = null;
+  for (const item of items) {
+    if (clashFix || !item.grouped || !item.selectedGroup) continue;
+    const others = combinedEntries.filter((entry) => entry.course !== item.course);
+    if (!clashingCourse(item.grouped[item.selectedGroup] ?? [], others)) continue;
+    const group = groupKeys(item.grouped).find(
+      (key) => !clashingCourse(item.grouped![key] ?? [], others),
+    );
+    if (group) clashFix = { itemId: item.id, course: item.course, group };
+  }
 
   return {
+    step,
+    setStep,
     viewMode,
     setViewMode,
     items,
-    adding,
-    globalError,
+    expandedId,
+    setExpandedId,
     exportError,
     exporting,
-    showClashesOnly,
-    setShowClashesOnly,
+    subjectColors,
     subjectColorOverrides,
     subjectColorDrafts,
     timetableRef,
-    exportRef,
     combinedEntries,
-    displayedEntries,
-    clashCount,
+    clashPairs,
+    clashFix,
     savedImport,
-    handleAddSubject,
+    addSearchedSubject,
     handleConfirmMyStudentImport,
     handleRestoreSavedImport,
     handleClearSavedImport,
-    handleChooseMatch,
     selectGroup,
-    clearGroups,
     setGroupFilter,
-    toggleShowSelectedOnly,
     removeItem,
+    clearAll,
+    focusSubject,
     setSubjectColor,
     setSubjectColorDraft,
     commitSubjectColorDraft,
     exportTimetable,
-    groupKeys,
     formatImportTimestampLabel,
   };
 }
+
+export type HomePageState = ReturnType<typeof useHomePage>;
