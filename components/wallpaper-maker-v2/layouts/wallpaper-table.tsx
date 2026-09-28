@@ -197,6 +197,47 @@ function formatTimeLabel(start: string, end: string): string {
   return `${start} - ${end}`;
 }
 
+function formatTimeCompact(start: string, end: string): string {
+  const compactPart = (time: string) => {
+    if (!time) return "";
+    const [hStr, mStr = "00"] = time.split(":");
+    const hour = Number.parseInt(hStr ?? "", 10);
+    const minute = Number.parseInt(mStr ?? "", 10);
+    if (Number.isNaN(hour)) return time;
+    if (Number.isNaN(minute) || minute === 0) return `${hour}`;
+    return `${hour}:${minute.toString().padStart(2, "0")}`;
+  };
+
+  if (!start && !end) return "";
+  if (!end) return compactPart(start);
+  return `${compactPart(start)}–${compactPart(end)}`;
+}
+
+function compositeOnWhite(
+  rgb: [number, number, number],
+  alpha: number,
+): [number, number, number] {
+  const blend = (channel: number) =>
+    Math.round(channel * alpha + 255 * (1 - alpha));
+  return [blend(rgb[0]), blend(rgb[1]), blend(rgb[2])];
+}
+
+function rgbBrightness(rgb: [number, number, number]): number {
+  return (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
+}
+
+function getReadableBlockTextColor(
+  borderColor: string,
+  blockTintAlpha: number,
+  isDarkOverlay: boolean,
+): string {
+  if (isDarkOverlay) return "#F8FAFC";
+  const channels = parseRgbChannels(borderColor);
+  if (!channels) return "#0F172A";
+  const composite = compositeOnWhite(channels, blockTintAlpha);
+  return rgbBrightness(composite) < 165 ? "#F8FAFC" : "#0F172A";
+}
+
 function getExportDetailFontSize(
   baseSizePx: number,
   text: string,
@@ -289,8 +330,10 @@ function getBlockDetailStyle(
   fontSize: string,
   isExportMode: boolean,
   color: string,
+  options: { wrap?: boolean; maxLines?: number } = {},
 ): CSSProperties {
-  return {
+  const { wrap = false, maxLines = 2 } = options;
+  const base: CSSProperties = {
     color,
     fontSize,
     lineHeight: isExportMode ? 1.1 : 1.12,
@@ -298,8 +341,24 @@ function getBlockDetailStyle(
     width: "100%",
     minWidth: 0,
     overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
+  };
+
+  if (!wrap) {
+    return {
+      ...base,
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+    };
+  }
+
+  return {
+    ...base,
+    whiteSpace: "normal",
+    wordBreak: "break-word",
+    overflowWrap: "anywhere",
+    display: "-webkit-box",
+    WebkitLineClamp: maxLines,
+    WebkitBoxOrient: "vertical",
   };
 }
 
@@ -538,7 +597,18 @@ export function WallpaperTable({
   const tableSubtleText = isDarkOverlay
     ? "rgba(248, 250, 252, 0.9)"
     : "rgba(15, 23, 42, 0.72)";
-  const subjectText = tableText;
+  const mobileLabelBoost = isPreview && isMobileViewport ? 1.6 : 1;
+  const previewLabelMultiplier =
+    (isPreview ? 1.4 : 1) * mobileLabelBoost;
+  const previewTitleSize = `${(
+    Number.parseFloat(densityConfig.titleSize) * previewLabelMultiplier
+  ).toFixed(2)}px`;
+  const previewDayLabelSize = `${(
+    Number.parseFloat(densityConfig.dayLabelSize) * previewLabelMultiplier
+  ).toFixed(2)}px`;
+  const previewTimeLabelSize = `${(
+    Number.parseFloat(densityConfig.timeLabelSize) * previewLabelMultiplier
+  ).toFixed(2)}px`;
 
   return (
     <div
@@ -564,7 +634,7 @@ export function WallpaperTable({
           className="flex items-center justify-center font-semibold tracking-wide"
           style={{
             height: `${densityConfig.titleHeightPx}px`,
-            fontSize: densityConfig.titleSize,
+            fontSize: previewTitleSize,
             borderBottom: `1px solid ${tableBorder}`,
             color: tableHeaderText,
           }}>
@@ -591,7 +661,7 @@ export function WallpaperTable({
                   key={day}
                   className="flex items-center justify-center px-0.5 font-semibold pt-0.5"
                   style={{
-                    fontSize: densityConfig.dayLabelSize,
+                    fontSize: previewDayLabelSize,
                     borderBottom: `1px solid ${tableGrid}`,
                     borderRight:
                       day === activeDays[activeDays.length - 1]
@@ -621,13 +691,13 @@ export function WallpaperTable({
                   return (
                     <div
                       key={hour}
-                      className="flex items-center justify-center text-center px-0.5"
+                      className="flex items-start justify-center text-center px-0.5 pt-[2px]"
                       style={{ boxShadow: `inset 0 -1px 0 ${tableGrid}` }}>
                       <span
                         className="font-semibold leading-none tracking-[-0.02em]"
                         style={{
                           color: tableSubtleText,
-                          fontSize: densityConfig.timeLabelSize,
+                          fontSize: previewTimeLabelSize,
                         }}>
                         {formatMinimalHourLabel(hour)}
                       </span>
@@ -674,10 +744,27 @@ export function WallpaperTable({
                         const isCompact = block.durationMinutes <= 75;
                         const isTight = isCompact || block.columnCount > 1;
                         const venueLabel = formatVenueLabel(block.venue);
-                        const timeLabel = formatTimeLabel(
-                          block.start,
-                          block.end,
+                        const isNarrowCell =
+                          block.columnCount > 1 || dayCount >= 5 || isTight;
+                        const timeLabel = isNarrowCell
+                          ? formatTimeCompact(block.start, block.end)
+                          : formatTimeLabel(block.start, block.end);
+                        const blockTintAlpha = 0.24;
+                        const blockTextColor = getReadableBlockTextColor(
+                          block.borderColor,
+                          blockTintAlpha,
+                          isDarkOverlay,
                         );
+                        const blockSubtleColor = isDarkOverlay
+                          ? "rgba(248, 250, 252, 0.92)"
+                          : blockTextColor === "#F8FAFC"
+                            ? "rgba(248, 250, 252, 0.92)"
+                            : "rgba(15, 23, 42, 0.82)";
+                        const blockMutedColor = isDarkOverlay
+                          ? "rgba(248, 250, 252, 0.78)"
+                          : blockTextColor === "#F8FAFC"
+                            ? "rgba(248, 250, 252, 0.82)"
+                            : "rgba(15, 23, 42, 0.7)";
                         const baseCodeTextSize = Number.parseFloat(
                           isTight
                             ? densityConfig.codeTight
@@ -697,9 +784,16 @@ export function WallpaperTable({
                           1,
                           1.9,
                         );
-                        const tightFitPenalty =
-                          dayCount >= 5 || block.columnCount > 1 ? 0.8 : 1;
                         const isOneHourBlock = block.slotSpan <= 2;
+                        const isFullWidthCell = block.columnCount === 1;
+                        const tightFitPenalty =
+                          block.columnCount > 1
+                            ? 0.8
+                            : dayCount >= 5
+                              ? isOneHourBlock && isFullWidthCell
+                                ? 0.94
+                                : 0.85
+                              : 1;
                         const prioritizeCodeOnly =
                           renderMode === "preview"
                             ? isOneHourBlock ||
@@ -725,12 +819,10 @@ export function WallpaperTable({
                               ? 0.92
                               : 0.96
                             : 1;
+                        const isCrowdedCell =
+                          block.columnCount > 1 || dayCount >= 6;
                         const previewTightCodePenalty =
-                          renderMode === "preview" &&
-                          isPortrait &&
-                          (isOneHourBlock ||
-                            block.columnCount > 1 ||
-                            dayCount >= 6)
+                          renderMode === "preview" && isPortrait && isCrowdedCell
                             ? codeLength >= 6
                               ? 0.92
                               : 0.96
@@ -745,12 +837,7 @@ export function WallpaperTable({
                                 : codeLength >= 6
                                   ? 0.84
                                   : 0.92) *
-                            (isPortrait &&
-                            (block.columnCount > 1 ||
-                              dayCount >= 6 ||
-                              isOneHourBlock)
-                              ? 0.92
-                              : 1),
+                            (isPortrait && isCrowdedCell ? 0.92 : 1),
                           0.58,
                           1,
                         );
@@ -758,14 +845,14 @@ export function WallpaperTable({
                           codeFitScaleX *
                             (renderMode === "preview" &&
                             isPortrait &&
-                            (isOneHourBlock ||
-                              block.columnCount > 1 ||
-                              dayCount >= 6)
+                            isCrowdedCell
                               ? 0.9
                               : 1),
-                          0.54,
+                          0.5,
                           1,
                         );
+                        const mobilePreviewBoost =
+                          renderMode === "preview" && isMobileViewport ? 1.7 : 1;
                         const resolvedCodeSize = `${(
                           baseCodeTextSize *
                           codeScale *
@@ -775,9 +862,10 @@ export function WallpaperTable({
                           tightFitPenalty *
                           (renderMode === "preview"
                             ? isPortrait && (isOneHourBlock || dayCount >= 6)
-                              ? 1.22
-                              : 1.34
+                              ? 1.45
+                              : 1.6
                             : 1) *
+                          mobilePreviewBoost *
                           clamp(
                             readableBoost * (prioritizeCodeOnly ? 1.18 : 1),
                             1,
@@ -809,12 +897,16 @@ export function WallpaperTable({
                           !isCompact &&
                           settings.showLecturer &&
                           Boolean(block.lecturer);
+                        const previewDetailMultiplier =
+                          renderMode === "preview" ? 1.5 : 1;
                         const venueTextSize = `${(
                           Number.parseFloat(
                             isTight
                               ? densityConfig.venueTight
                               : densityConfig.venueNormal,
-                          ) * clamp(readableBoost * 0.86, 0.96, 1.45)
+                          ) *
+                          clamp(readableBoost * 0.86, 0.96, 1.45) *
+                          previewDetailMultiplier
                         ).toFixed(2)}px`;
                         const exportVenueTextSize =
                           renderMode === "export"
@@ -835,7 +927,9 @@ export function WallpaperTable({
                             isTight
                               ? densityConfig.timeTight
                               : densityConfig.timeNormal,
-                          ) * clamp(readableBoost * 0.9, 0.98, 1.5)
+                          ) *
+                          clamp(readableBoost * 0.9, 0.98, 1.5) *
+                          previewDetailMultiplier
                         ).toFixed(2)}px`;
                         const exportTimeTextSize =
                           renderMode === "export"
@@ -861,16 +955,13 @@ export function WallpaperTable({
                         const venueDetailStyle = getBlockDetailStyle(
                           resolvedVenueTextSize,
                           isExportMode,
-                          isDarkOverlay
-                            ? "rgba(248, 250, 252, 0.96)"
-                            : "rgba(15, 23, 42, 0.86)",
+                          blockSubtleColor,
+                          { wrap: true, maxLines: 2 },
                         );
                         const timeDetailStyle = getBlockDetailStyle(
                           resolvedTimeTextSize,
                           isExportMode,
-                          isDarkOverlay
-                            ? "rgba(248, 250, 252, 0.92)"
-                            : "rgba(15, 23, 42, 0.82)",
+                          blockSubtleColor,
                         );
 
                         const widthPercent = 100 / block.columnCount;
@@ -939,9 +1030,11 @@ export function WallpaperTable({
                             }}>
                             {showCourseCode ? (
                               <div
-                                className="max-w-full overflow-hidden whitespace-nowrap font-black"
+                                className={`max-w-full whitespace-nowrap font-black${
+                                  isExportMode ? " overflow-hidden" : ""
+                                }`}
                                 style={{
-                                  color: subjectText,
+                                  color: blockTextColor,
                                   fontSize: resolvedCodeSize,
                                   lineHeight: 1,
                                   width: "100%",
@@ -972,23 +1065,25 @@ export function WallpaperTable({
                             ) : null}
                             {showCourseNameDetails ? (
                               <div
-                                className="max-w-full whitespace-normal wrap-break-word text-[6.3px] leading-[1.1] font-medium"
+                                className="max-w-full whitespace-normal wrap-break-word leading-[1.1] font-medium"
                                 style={{
-                                  color: tableSubtleText,
+                                  color: blockMutedColor,
                                   textAlign: "center",
+                                  fontSize: `${(6.3 * previewDetailMultiplier).toFixed(2)}px`,
                                 }}>
                                 {block.subjectName}
                               </div>
                             ) : null}
                             {showLecturerDetails ? (
                               <div
-                                className="max-w-full whitespace-normal wrap-break-word text-[5.75px] leading-[1.1] font-medium"
+                                className="max-w-full whitespace-normal wrap-break-word leading-[1.1] font-medium"
                                 style={{
-                                  color: tableSubtleText,
+                                  color: blockMutedColor,
                                   textAlign: "center",
                                   display: "-webkit-box",
                                   WebkitLineClamp: 1,
                                   WebkitBoxOrient: "vertical",
+                                  fontSize: `${(5.75 * previewDetailMultiplier).toFixed(2)}px`,
                                 }}>
                                 {block.lecturer}
                               </div>

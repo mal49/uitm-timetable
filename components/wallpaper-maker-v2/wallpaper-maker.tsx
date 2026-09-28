@@ -13,16 +13,11 @@ export interface WallpaperMakerProps {
 export function WallpaperMaker({ entries, colorOverrides = {} }: WallpaperMakerProps) {
   return (
     <WallpaperProvider initialEntries={entries} initialColorOverrides={colorOverrides}>
-      <div className="flex flex-col lg:grid lg:grid-cols-[400px_1fr] gap-0">
-        {/* Settings Panel (Left) */}
-        <div className="border-b lg:border-b-0 lg:border-r border-border bg-background">
+      <div className="flex min-h-[calc(100dvh-132px)] flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_400px]">
+        <PreviewPanel />
+        <aside aria-label="Wallpaper settings" className="border-t border-border bg-card lg:border-t-0 lg:border-l">
           <SettingsPanel />
-        </div>
-
-        {/* Preview Panel (Right) */}
-        <div className="bg-background">
-          <PreviewPanel />
-        </div>
+        </aside>
       </div>
     </WallpaperProvider>
   );

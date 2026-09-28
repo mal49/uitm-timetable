@@ -132,3 +132,57 @@ export function markClashes(entries: TimetableEntry[]) {
     isClash: clashKeys.has(entryKey(entry)),
   }));
 }
+
+export function overlaps(a: TimetableEntry, b: TimetableEntry) {
+  return (
+    a.day === b.day &&
+    timeToMinutes(a.start) < timeToMinutes(b.end) &&
+    timeToMinutes(b.start) < timeToMinutes(a.end)
+  );
+}
+
+export type ClashPair = { a: TimetableEntry; b: TimetableEntry };
+
+/** Overlapping pairs between different subjects, in input order. */
+export function findClashPairs(entries: TimetableEntry[]): ClashPair[] {
+  const pairs: ClashPair[] = [];
+  entries.forEach((a, i) => {
+    for (const b of entries.slice(i + 1)) {
+      if (a.course !== b.course && overlaps(a, b)) pairs.push({ a, b });
+    }
+  });
+  return pairs;
+}
+
+/** Course code of the first entry in `others` that `candidate` would overlap. */
+export function clashingCourse(candidate: TimetableEntry[], others: TimetableEntry[]) {
+  return others.find((other) => candidate.some((entry) => overlaps(entry, other)))?.course ?? null;
+}
+
+/** "CSC584 - ENTERPRISE PROGRAMMING" -> { code, name } */
+export function splitSubjectLabel(label: string, fallbackCode: string) {
+  const match = label.match(/^([A-Z]{2,4}\d{3}[A-Z]?)\s*[-:–]?\s*(.*)$/i);
+  return {
+    code: (match?.[1] ?? fallbackCode).toUpperCase(),
+    name: (match?.[2] || label).trim(),
+  };
+}
+
+export function minutesToLabel(minutes: number) {
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+export { timeToMinutes };
+
+/** "Mon 8:00 · Wed 10:00" style summary of a group's sessions. */
+export function summarizeSessions(entries: TimetableEntry[]) {
+  return entries
+    .map((entry) => `${entry.day.slice(0, 3)} ${minutesToLabel(timeToMinutes(entry.start))}`)
+    .join(" · ");
+}
+
+/** Portal names arrive in ALL CAPS; show them in title case. */
+export function displayName(name: string) {
+  if (name !== name.toUpperCase()) return name;
+  return name.toLowerCase().replace(/\b[a-z]/g, (char) => char.toUpperCase());
+}

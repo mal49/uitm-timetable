@@ -1,175 +1,181 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowRight, History, IdCard, Loader2, Trash2, TriangleAlert } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
+import { History, IdCard, Loader2, RefreshCw, RotateCcw, WifiOff } from "lucide-react";
+import { FieldBox, fieldInput } from "@/app/_home/components/controls";
 import {
   type MyStudentImportResult,
   parseMyStudentImportData,
 } from "@/lib/importers/mystudent";
+import { cn } from "@/lib/utils";
 
 type MyStudentImportPanelProps = {
   onConfirmImport: (result: MyStudentImportResult) => void;
-  hasSavedImport: boolean;
   savedImportLabel?: string;
   onRestoreSavedImport: () => void;
   onClearSavedImport: () => void;
+  onSearchManually: () => void;
+  initialStudentId?: string;
 };
+
+type LoadState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "invalid"; message: string }
+  | { kind: "unavailable" };
+
+class NotFoundError extends Error {}
 
 export function MyStudentImportPanel({
   onConfirmImport,
-  hasSavedImport,
   savedImportLabel,
   onRestoreSavedImport,
   onClearSavedImport,
+  onSearchManually,
+  initialStudentId,
 }: MyStudentImportPanelProps) {
-  const [studentId, setStudentId] = useState("");
-  const [fetchingStudentId, setFetchingStudentId] = useState(false);
-  const [error, setError] = useState("");
+  const [studentId, setStudentId] = useState(initialStudentId ?? "");
+  const [state, setState] = useState<LoadState>({ kind: "idle" });
 
-  async function handleFetchFromStudentId() {
-    const normalizedId = studentId.trim();
-    if (!/^\d+$/.test(normalizedId)) {
-      setError("Enter a valid numeric student ID first.");
+  async function load(id: string) {
+    if (!/^\d+$/.test(id)) {
+      setState({ kind: "invalid", message: "Enter your numeric student ID." });
       return;
     }
 
+    setState({ kind: "loading" });
     try {
-      setFetchingStudentId(true);
-      setError("");
-
-      const response = await fetch(
-        `/api/mystudent?studentId=${encodeURIComponent(normalizedId)}`,
-        {
-          cache: "no-store",
-        },
-      );
-      const json = (await response.json()) as Record<string, unknown> & {
-        error?: string;
-        detail?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(
-          [json.error, json.detail].filter(Boolean).join(" ") ||
-            "Failed to fetch timetable for that student ID.",
-        );
-      }
+      const response = await fetch(`/api/mystudent?studentId=${encodeURIComponent(id)}`, { cache: "no-store" });
+      const json = (await response.json()) as Record<string, unknown>;
+      if (response.status === 404) throw new NotFoundError();
+      if (!response.ok) throw new Error(String(json.error ?? "Upstream error"));
 
       const result = parseMyStudentImportData(json);
-      setStudentId(normalizedId);
+      setState({ kind: "idle" });
       onConfirmImport(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setFetchingStudentId(false);
+      setState(
+        err instanceof NotFoundError
+          ? { kind: "invalid", message: "No timetable found for this ID. Check your matric card." }
+          : { kind: "unavailable" },
+      );
     }
   }
 
+  // The landing page hands the ID over as /app?id=…; load it once, then drop it
+  // from the URL so a refresh doesn't re-import.
+  useEffect(() => {
+    if (!initialStudentId || !new URLSearchParams(window.location.search).has("id")) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    void load(initialStudentId);
+    // Mount-only: consume the handed-over ID once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loading = state.kind === "loading";
+  const hasSaved = Boolean(savedImportLabel);
+
   return (
-    <div className="relative overflow-hidden rounded-[1.4rem] border border-white/20 bg-[linear-gradient(145deg,rgba(246,240,255,0.92),rgba(226,214,247,0.9),rgba(239,232,251,0.9))] p-3.5 shadow-[0_16px_36px_rgba(57,33,92,0.16)] backdrop-blur-md sm:p-4">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(125,244,195,0.12),transparent_22%),radial-gradient(circle_at_top_left,rgba(255,255,255,0.28),transparent_26%),radial-gradient(circle_at_bottom,rgba(84,49,128,0.1),transparent_38%)]" />
-
-      <div className="relative flex flex-col gap-3">
-        <div className="max-w-2xl space-y-1.5 animate-[fade-in_500ms_ease-out]">
-          <div className="space-y-1.5">
-            <h3 className="text-[1.3rem] font-bold tracking-[-0.04em] text-[#241232] sm:text-[1.55rem]">
-              Import with student ID.
-            </h3>
-            <p className="max-w-xl text-sm leading-5 text-[#5d4f6d]">
-              Recommended. The timetable loads directly from MyStudent.
-            </p>
-          </div>
-        </div>
-
-        {hasSavedImport ? (
-          <div className="flex flex-col gap-3 rounded-[1.15rem] border border-[#d7caea] bg-white/80 px-3.5 py-3 text-[#433258] shadow-[0_10px_24px_rgba(50,24,84,0.06)] sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a6890]">
-                <History className="h-3.5 w-3.5" />
-                Saved Import
-              </div>
-              <p className="mt-1 text-sm leading-5 text-[#5d4f6d]">
-                {savedImportLabel ?? "A previous MyStudent import is available."}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={onRestoreSavedImport}
-                className="h-9 rounded-full border-0 bg-[#21d4cf] px-4 text-xs font-semibold text-slate-950 shadow-[0_12px_24px_rgba(33,212,207,0.18)] hover:bg-[#3fe1dc]"
-              >
+    <div className="space-y-6">
+      {hasSaved && !loading ? (
+        <div className="flex gap-3 rounded-xl bg-primary-soft p-4">
+          <History aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-primary-soft-foreground">Welcome back</p>
+            <p className="mt-1 text-[13px] text-foreground">{savedImportLabel}</p>
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={onRestoreSavedImport} className="inline-flex h-8 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90">
+                <RotateCcw aria-hidden="true" className="size-4" />
                 Restore
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onClearSavedImport}
-                className="h-9 rounded-full px-3 text-[#6d5a83] hover:bg-white/70 hover:text-[#241232]"
-              >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              </button>
+              <button type="button" onClick={onClearSavedImport} className="h-8 rounded-lg px-3 text-sm text-muted-foreground hover:bg-surface-3 hover:text-foreground">
                 Clear
-              </Button>
+              </button>
             </div>
           </div>
-        ) : null}
-
-        <div className="rounded-[1.2rem] border border-white/35 bg-[linear-gradient(145deg,rgba(255,255,255,0.92),rgba(245,240,252,0.86))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_10px_24px_rgba(50,24,84,0.08)] animate-[fade-in_700ms_ease-out] backdrop-blur-sm sm:p-3.5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7a6890]">
-              Student ID
-            </p>
-            <span className="rounded-full border border-[#b8f0e2] bg-[#def8f0] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#149987] animate-[pulse_2.4s_ease-in-out_infinite]">
-              Recommended
-            </span>
-          </div>
-
-          <div className="mt-2.5 flex flex-col gap-2.5 sm:flex-row">
-            <div className="relative flex-1">
-              <IdCard className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8f83a3]" />
-              <Input
-                value={studentId}
-                onChange={(event) => {
-                  setStudentId(event.target.value.replace(/[^\d]/g, ""));
-                  setError("");
-                }}
-                inputMode="numeric"
-                placeholder="e.g. 2023456789"
-                className="h-11 rounded-[0.95rem] border-[#ddd2ef] bg-white pl-11 text-[15px] text-[#27183a] placeholder:text-[#9788ab] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus-visible:ring-[#21d4cf]/35"
-              />
-            </div>
-
-            <Button
-              type="button"
-              onClick={handleFetchFromStudentId}
-              disabled={fetchingStudentId}
-              className="h-11 rounded-[0.95rem] border-0 bg-[linear-gradient(135deg,#22d3c5,#16a89e)] px-4 text-sm font-semibold text-[#08211f] shadow-[0_12px_24px_rgba(33,212,207,0.18)] transition-transform duration-200 hover:scale-[1.02] hover:bg-[linear-gradient(135deg,#1dc4b7,#139187)]"
-            >
-              {fetchingStudentId ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ArrowRight className="h-4 w-4" />
-              )}
-              Load
-            </Button>
-          </div>
-
-          <p className="mt-2.5 text-xs leading-5 text-[#665878]">
-            Use your student ID only.
-          </p>
-
-          {error ? (
-            <div className="mt-4 flex items-start gap-3 rounded-[1.2rem] border border-[#efc9c0]/70 bg-[rgba(255,244,241,0.86)] px-4 py-3 text-sm text-[#7b3024] shadow-[0_10px_24px_rgba(123,48,36,0.08)]">
-              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>{error}</p>
-            </div>
-          ) : null}
         </div>
-      </div>
+      ) : null}
+
+      <form
+        className="flex gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!loading) void load(studentId.trim());
+        }}
+      >
+        <FieldBox
+          label="Student ID"
+          htmlFor="student-id"
+          icon={<IdCard aria-hidden="true" />}
+          error={state.kind === "invalid" ? state.message : undefined}
+          className="flex-1"
+        >
+          <input
+            id="student-id"
+            value={studentId}
+            onChange={(event) => {
+              setStudentId(event.target.value.replace(/[^\d]/g, ""));
+              if (state.kind === "invalid") setState({ kind: "idle" });
+            }}
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="e.g. 2023456789"
+            aria-invalid={state.kind === "invalid"}
+            className={fieldInput}
+          />
+        </FieldBox>
+        <button
+          type="submit"
+          disabled={loading}
+          className={cn(
+            "inline-flex min-h-14 shrink-0 items-center gap-2 self-stretch rounded-xl px-6 text-sm font-medium transition-opacity hover:opacity-90",
+            hasSaved && !loading ? "bg-muted text-foreground hover:bg-surface-3" : "bg-primary text-primary-foreground",
+          )}
+        >
+          {loading ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : null}
+          {loading ? "Loading" : "Load"}
+        </button>
+      </form>
+
+      {loading ? (
+        <div aria-live="polite" className="space-y-5">
+          <div>
+            <p className="text-[13px] text-muted-foreground">Fetching from MyStudent…</p>
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-3">
+              <div className="h-full w-2/5 animate-[indeterminate_1.4s_ease-in-out_infinite] rounded-full bg-linear-to-r from-primary to-info" />
+            </div>
+          </div>
+          {[220, 170, 200].map((width) => (
+            <div key={width} aria-hidden="true" className="flex h-[34px] items-center gap-3 rounded-lg bg-muted px-4">
+              <span className="size-2 rounded-full bg-surface-3" />
+              <span className="h-2 animate-pulse rounded-full bg-surface-3" style={{ width }} />
+            </div>
+          ))}
+        </div>
+      ) : state.kind === "unavailable" ? (
+        <div role="alert" className="flex gap-3 rounded-xl bg-warning/15 p-4">
+          <WifiOff aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-warning" />
+          <div>
+            <p className="text-sm font-semibold text-warning">MyStudent isn&apos;t responding</p>
+            <p className="mt-1 text-[13px] leading-5 text-foreground">
+              The portal often slows down during registration week. Try again in a minute, or add subjects by course code.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={() => void load(studentId.trim())} className="inline-flex h-8 items-center gap-2 rounded-lg bg-warning px-3 text-sm font-medium text-black hover:opacity-90">
+                <RefreshCw aria-hidden="true" className="size-4" />
+                Try again
+              </button>
+              <button type="button" onClick={onSearchManually} className="h-8 rounded-lg px-3 text-sm font-medium text-warning hover:bg-warning/15">
+                Search manually
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-faint">
+          {hasSaved ? "Loading again replaces the saved build." : "Only your student ID is used. Nothing is stored on our side."}
+        </p>
+      )}
     </div>
   );
 }

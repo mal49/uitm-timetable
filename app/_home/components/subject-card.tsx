@@ -1,300 +1,165 @@
-import { AlertCircle, Search, Trash2, X } from "lucide-react";
+import { ChevronDown, Search, Trash2 } from "lucide-react";
 import { PRESET_SUBJECT_HEX } from "@/app/_home/constants";
+import { FieldBox, fieldInput, GroupBadge, GroupChips } from "@/app/_home/components/controls";
 import type { SubjectItem } from "@/app/_home/types";
-import { formatImportTimestampLabel } from "@/app/_home/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { TimetableGridSkeleton } from "@/components/timetable-grid";
+import {
+  displayName,
+  formatImportTimestampLabel,
+  groupKeys,
+  minutesToLabel,
+  overlaps,
+  summarizeSessions,
+  timeToMinutes,
+} from "@/app/_home/utils";
+import type { TimetableEntry } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
-type SubjectCardProps = {
+type SubjectRowProps = {
   item: SubjectItem;
-  groups: string[];
-  colorValue: string;
+  color: string;
   colorDraft: string;
-  onRemove: (itemId: string) => void;
-  onSetColor: (course: string, value: string) => void;
-  onSetColorDraft: (course: string, value: string) => void;
-  onCommitColorDraft: (course: string) => void;
-  onChooseMatch: (itemId: string, path: string) => void;
-  onToggleShowSelectedOnly: (itemId: string) => void;
-  onClearGroups: (itemId: string) => void;
-  onSetGroupFilter: (itemId: string, value: string) => void;
-  onSelectGroup: (itemId: string, group: string) => void;
+  expanded: boolean;
+  /** Selected entries of every other subject. */
+  others: TimetableEntry[];
+  onToggle: () => void;
+  onRemove: () => void;
+  onSelectGroup: (group: string) => void;
+  onSetGroupFilter: (value: string) => void;
+  onSetColor: (value: string) => void;
+  onSetColorDraft: (value: string) => void;
+  onCommitColorDraft: () => void;
 };
 
-export function SubjectCard({
+export function SubjectRow({
   item,
-  groups,
-  colorValue,
+  color,
   colorDraft,
+  expanded,
+  others,
+  onToggle,
   onRemove,
+  onSelectGroup,
+  onSetGroupFilter,
   onSetColor,
   onSetColorDraft,
   onCommitColorDraft,
-  onChooseMatch,
-  onToggleShowSelectedOnly,
-  onClearGroups,
-  onSetGroupFilter,
-  onSelectGroup,
-}: SubjectCardProps) {
-  const hasGroups = groups.length > 0;
-  const hasSelection = Boolean(item.selectedGroup);
-  const ready = item.status === "ready";
+}: SubjectRowProps) {
+  const groups = groupKeys(item.grouped);
+  const selectedEntries = item.selectedGroup ? item.grouped?.[item.selectedGroup] ?? [] : [];
+  const clash = selectedEntries
+    .map((entry) => ({ entry, other: others.find((other) => overlaps(entry, other)) }))
+    .find(({ other }) => other);
+  const query = item.groupFilter.trim().toLowerCase();
+  const visibleGroups = query ? groups.filter((group) => group.toLowerCase().includes(query)) : groups;
+  const panelId = `subject-${item.id}`;
+
+  const meta = [
+    ["Source", item.source === "mystudent" ? "MyStudent" : "Manual search"],
+    item.request ? ["Campus", item.request.campus] : null,
+    item.request?.faculty ? ["Faculty", item.request.faculty] : null,
+    item.importedAt ? ["Imported", formatImportTimestampLabel(item.importedAt)] : null,
+  ].filter((row): row is [string, string] => Boolean(row));
 
   return (
-    <div className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-[#fffdf9] p-4 shadow-sm">
-      <div className="min-w-0 space-y-3">
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <span className="inline-flex max-w-full shrink-0 rounded-full bg-slate-900 px-3 py-1.5 font-mono text-xs font-bold leading-none text-white">
-                {item.course}
-              </span>
-              {item.subjectName && item.subjectName !== item.course ? (
-                <span className="min-w-0 wrap-break-word text-xs text-slate-500 sm:text-sm">
-                  {item.subjectName}
-                </span>
+    <li className={cn(expanded && "bg-foreground/[0.03]")}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        className="relative flex w-full items-center gap-3 py-3.5 pr-6 pl-9 text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
+      >
+        <span aria-hidden="true" className="absolute top-1/2 left-4 h-9 w-1 -translate-y-1/2 rounded-full" style={{ background: color }} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm">
+            <span className="font-semibold">{item.course}</span>{" "}
+            <span className="text-muted-foreground">{displayName(item.subjectName ?? "")}</span>
+          </span>
+          <span className={cn("block truncate text-xs", clash ? "text-destructive" : "text-faint")}>
+            {clash
+              ? `${clash.entry.day.slice(0, 3)} ${minutesToLabel(timeToMinutes(clash.entry.start))} clashes with ${clash.other!.course}`
+              : summarizeSessions(selectedEntries) || "Pick a group"}
+          </span>
+        </span>
+        {item.selectedGroup ? <GroupBadge group={item.selectedGroup} clash={Boolean(clash)} /> : null}
+        <ChevronDown aria-hidden="true" className={cn("size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />
+      </button>
+
+      {expanded ? (
+        <div id={panelId} className="space-y-5 pr-6 pb-5 pl-9">
+          <dl className="flex flex-wrap gap-x-6 gap-y-2">
+            {meta.map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-xs text-faint">{label}</dt>
+                <dd className="text-[13px]">{value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <p className="text-xs font-medium text-muted-foreground">Group</p>
+              {groups.length > 4 ? (
+                <FieldBox label="Filter groups" htmlFor={`${panelId}-filter`} icon={<Search aria-hidden="true" />} className="w-full py-1 sm:w-[220px]">
+                  <input
+                    id={`${panelId}-filter`}
+                    value={item.groupFilter}
+                    onChange={(event) => onSetGroupFilter(event.target.value)}
+                    placeholder="e.g. CS24"
+                    className={fieldInput}
+                  />
+                </FieldBox>
               ) : null}
             </div>
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 sm:text-xs">
-              {item.request ? (
-                <>
-                  <p className="min-w-0">
-                    Campus:{" "}
-                    <span className="font-mono text-slate-700">
-                      {item.request.campus}
-                    </span>
-                  </p>
-                  <span className="text-slate-300">•</span>
-                  <p className="min-w-0">
-                    Faculty:{" "}
-                    <span className="font-mono text-slate-700">
-                      {item.request.faculty || "—"}
-                    </span>
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="min-w-0">
-                    Source:{" "}
-                    <span className="font-mono text-slate-700">MyStudent</span>
-                  </p>
-                  {item.importedAt ? (
-                    <>
-                      <span className="text-slate-300">•</span>
-                      <p className="min-w-0">
-                        Imported:{" "}
-                        <span className="font-mono text-slate-700">
-                          {formatImportTimestampLabel(item.importedAt)}
-                        </span>
-                      </p>
-                    </>
-                  ) : null}
-                  {item.exportedAt ? (
-                    <>
-                      <span className="text-slate-300">•</span>
-                      <p className="min-w-0">
-                        Exported:{" "}
-                        <span className="font-mono text-slate-700">
-                          {formatImportTimestampLabel(item.exportedAt)}
-                        </span>
-                      </p>
-                    </>
-                  ) : null}
-                </>
-              )}
-            </div>
+            {item.grouped && visibleGroups.length > 0 ? (
+              <GroupChips grouped={item.grouped} groups={visibleGroups} selected={item.selectedGroup} others={others} onSelect={onSelectGroup} />
+            ) : (
+              <p className="text-sm text-muted-foreground">No groups match.</p>
+            )}
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onRemove(item.id)}
-            className="justify-start gap-2 self-start rounded-full px-0 text-slate-500 hover:bg-transparent hover:text-slate-900 sm:px-3 sm:hover:bg-slate-100"
-          >
-            <Trash2 className="h-4 w-4 shrink-0" />
-            <span>Remove</span>
-          </Button>
-        </div>
-
-        <div className="w-full min-w-0 rounded-2xl bg-slate-100 px-3 py-2 sm:max-w-65">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Color
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {PRESET_SUBJECT_HEX.map((hex, index) => {
-              const selected = colorValue.toLowerCase() === hex.toLowerCase();
-              return (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">Colour</p>
+            <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+              {PRESET_SUBJECT_HEX.map((hex) => (
                 <button
-                  key={`${item.course}-color-${index}`}
+                  key={hex}
                   type="button"
-                  onClick={() => onSetColor(item.course, hex)}
-                  aria-label={`Set ${item.course} color ${index + 1}`}
-                  style={{
-                    backgroundColor: hex,
-                    borderColor: hex,
-                  }}
-                  className={`h-4 w-4 rounded-full border transition-transform hover:scale-110 ${
-                    selected
-                      ? "ring-2 ring-slate-900 ring-offset-2 ring-offset-[#fffdf9]"
-                      : ""
-                  }`}
+                  onClick={() => onSetColor(hex)}
+                  aria-label={`Use colour ${hex}`}
+                  aria-pressed={color.toLowerCase() === hex}
+                  className="size-6 rounded-full ring-offset-2 ring-offset-card transition-transform hover:scale-110 aria-pressed:ring-2 aria-pressed:ring-foreground"
+                  style={{ background: hex }}
                 />
-              );
-            })}
-
-            <label className="relative inline-flex h-5 w-5 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-slate-300 bg-white">
-              <span
-                className="h-3.5 w-3.5 rounded-sm border border-slate-300"
-                style={{ backgroundColor: colorValue || "#14b8a6" }}
-              />
+              ))}
               <input
-                type="color"
-                value={colorValue || "#14b8a6"}
-                onChange={(event) => onSetColor(item.course, event.target.value)}
-                className="absolute inset-0 cursor-pointer opacity-0"
-                aria-label={`Pick custom color for ${item.course}`}
+                value={colorDraft}
+                onChange={(event) => onSetColorDraft(event.target.value)}
+                onBlur={onCommitColorDraft}
+                aria-label={`Hex colour for ${item.course}`}
+                className="h-7 w-[84px] rounded-md bg-muted px-2 font-mono text-xs uppercase outline-none focus:ring-2 focus:ring-primary"
               />
-            </label>
-          </div>
-
-          <input
-            type="text"
-            inputMode="text"
-            value={colorDraft}
-            placeholder="#22c55e"
-            onChange={(event) => onSetColorDraft(item.course, event.target.value)}
-            onBlur={() => onCommitColorDraft(item.course)}
-            className="mt-2 h-8 w-28 rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-mono text-slate-700"
-            aria-label={`Hex color for ${item.course}`}
-          />
-        </div>
-      </div>
-
-      {item.status === "loading_subjects" || item.status === "loading_timetable" ? (
-        <div className="mt-4">
-          <TimetableGridSkeleton />
-        </div>
-      ) : null}
-
-      {item.status === "error" ? (
-        <div className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
-          <div className="space-y-0.5">
-            <p className="text-sm font-semibold text-rose-700">Failed</p>
-            <p className="text-xs text-slate-600">
-              {item.error ?? "Unknown error"}
-            </p>
-          </div>
-        </div>
-      ) : null}
-
-      {item.status === "choose_subject" ? (
-        <div className="mt-4 space-y-2">
-          <p className="text-sm font-medium text-slate-900">
-            Pick the correct subject result
-          </p>
-          <select
-            value={item.selectedPath ?? ""}
-            onChange={(event) => onChooseMatch(item.id, event.target.value)}
-            className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900"
-          >
-            <option value="" disabled>
-              Select a result...
-            </option>
-            {item.matches.map((match) => (
-              <option key={match.path} value={match.path}>
-                {match.subject || item.course}
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : null}
-
-      {ready ? (
-        <div className="mt-4 space-y-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm font-medium text-slate-900">
-              Groups{" "}
-              {hasGroups ? <span className="text-slate-500">({groups.length})</span> : null}
-            </p>
-            {hasGroups ? (
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <button
-                  onClick={() => onToggleShowSelectedOnly(item.id)}
-                  className="text-xs text-slate-500 transition-colors hover:text-slate-900"
-                >
-                  {item.showSelectedOnly ? "Show all" : "Selected only"}
-                </button>
-                {hasSelection ? (
-                  <button
-                    onClick={() => onClearGroups(item.id)}
-                    className="text-xs font-medium text-teal-700 transition-colors hover:text-teal-600"
-                  >
-                    Clear
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          {!hasGroups ? (
-            <p className="text-sm text-slate-500">No groups found for this subject.</p>
-          ) : (
-            <div className="space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  value={item.groupFilter}
-                  onChange={(event) => onSetGroupFilter(item.id, event.target.value)}
-                  placeholder="Filter groups... (e.g. A, CDCS2306, 2406B)"
-                  className="border-slate-300 bg-white pl-9 pr-9 text-slate-900"
-                />
-                {item.groupFilter.trim() ? (
-                  <button
-                    onClick={() => onSetGroupFilter(item.id, "")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-900"
-                    aria-label="Clear group filter"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-2">
-                {groups
-                  .filter((group) => {
-                    const query = item.groupFilter.trim().toLowerCase();
-                    if (item.showSelectedOnly && item.selectedGroup !== group) return false;
-                    if (!query) return true;
-
-                    return (
-                      group.toLowerCase().includes(query) ||
-                      `${item.course} ${group}`.toLowerCase().includes(query)
-                    );
-                  })
-                  .map((group) => (
-                    <label
-                      key={group}
-                      className="flex min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 transition-colors hover:bg-slate-50"
-                    >
-                      <input
-                        type="radio"
-                        name={`group-${item.id}`}
-                        checked={item.selectedGroup === group}
-                        onChange={() => onSelectGroup(item.id, group)}
-                        className="h-3.5 w-3.5 cursor-pointer rounded accent-teal-500"
-                      />
-                      <span className="min-w-0 flex-1 wrap-break-word font-mono text-xs text-slate-800">
-                        {item.course} <span className="font-semibold">{group}</span>
-                      </span>
-                    </label>
-                  ))}
-              </div>
             </div>
-          )}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                onCommitColorDraft();
+                onToggle();
+              }}
+              className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              Save
+            </button>
+            <button type="button" onClick={onRemove} className="inline-flex h-9 items-center gap-2 rounded-lg bg-destructive/15 px-4 text-sm font-medium text-destructive hover:bg-destructive/25">
+              <Trash2 aria-hidden="true" className="size-4" />
+              Remove subject
+            </button>
+          </div>
         </div>
       ) : null}
-    </div>
+    </li>
   );
 }

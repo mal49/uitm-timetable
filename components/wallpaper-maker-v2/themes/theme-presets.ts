@@ -11,10 +11,12 @@ export interface ThemePreset {
   overlayTextColor?: string;
 }
 
+export const NIGHT_BACKGROUND = "linear-gradient(180deg, #2b1942 0%, #120c1a 100%)";
+
 export const THEME_PRESETS: ThemePreset[] = [
   {
     id: "ios-default",
-    name: "iOS Default",
+    name: "Paper",
     description: "Warm lock screen with soft paper tones",
     background:
       "radial-gradient(circle at top, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #ded7cb 0%, #d7cfbe 52%, #ccc3b2 100%)",
@@ -35,9 +37,9 @@ export const THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: "gradient",
-    name: "Gradient Aurora",
-    description: "Vibrant gradient",
-    background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+    name: "Aurora",
+    description: "Purple to blue gradient",
+    background: "linear-gradient(160deg, #9353d3 0%, #006fee 100%)",
     lockscreenTextColor: "#ffffff",
     lockscreenTitleColor: "#ffffff",
     overlayBackground: "rgba(255, 244, 250, 0.93)",
@@ -111,6 +113,16 @@ export function getThemePreset(
   id: ThemeId,
   customBackground?: string,
 ): ThemePreset {
+  if (id === "night") {
+    return {
+      ...getThemePreset("custom", "#1E1330"),
+      id: "night",
+      name: "Night",
+      description: "Deep purple lock screen",
+      background: NIGHT_BACKGROUND,
+    };
+  }
+
   if (id === "custom") {
     const background = normalizeHexColor(customBackground) ?? "#0F766E";
     const textColor = getReadableTextColor(background);

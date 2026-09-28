@@ -1,235 +1,163 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { SketchPicker, type ColorResult } from "react-color";
+import { useState, type ComponentType } from "react";
+import { CustomPicker, type InjectedColorProps } from "react-color";
+import { Hue, Saturation } from "react-color/lib/components/common";
+import { Pipette, Plus, X } from "lucide-react";
 import { useWallpaper, type ThemeId } from "./wallpaper-context";
+import { getThemePreset } from "./themes/theme-presets";
 import { cn } from "@/lib/utils";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 
-interface ThemeOption {
-  id: ThemeId;
-  name: string;
-  preview: string; // gradient or color for preview
-}
-
-interface ThemeGroup {
-  title: string;
-  options: ThemeOption[];
-}
-
-const themeGroups: ThemeGroup[] = [
-  {
-    title: "Gradient Themes",
-    options: [
-      {
-        id: "ios-default",
-        name: "iOS Default",
-        preview:
-          "radial-gradient(circle at top, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0) 28%), linear-gradient(180deg, #ded7cb 0%, #d7cfbe 52%, #ccc3b2 100%)",
-      },
-      {
-        id: "light",
-        name: "Light & Clean",
-        preview: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-      },
-      {
-        id: "gradient",
-        name: "Gradient Aurora",
-        preview: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-      },
-      {
-        id: "glass",
-        name: "Glassmorphism",
-        preview:
-          "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%)",
-      },
-    ],
-  },
+const THEMES: { id: ThemeId; name: string }[] = [
+  { id: "night", name: "Night" },
+  { id: "ios-default", name: "Paper" },
+  { id: "gradient", name: "Aurora" },
 ];
 
-const CUSTOM_COLOR_FALLBACK = "#0F766E";
-const CUSTOM_SWATCHES = [
-  "#D0021B",
-  "#F5A623",
-  "#F8E71C",
-  "#8B572A",
-  "#7ED321",
-  "#417505",
-  "#BD10E0",
-  "#9013FE",
-  "#4A90E2",
-  "#50E3C2",
-  "#B8E986",
-  "#000000",
-  "#4A4A4A",
-  "#9B9B9B",
-  "#FFFFFF",
-];
+const SWATCHES = ["#0F4C4A", "#1A1A1A", "#9353D3", "#006FEE", "#8A2B3A", "#2F4F2F", "#F5A524", "#EDEDED"];
+const CUSTOM_COLOR_FALLBACK = "#0F4C4A";
 
-function normalizeHexColor(value?: string): string | null {
-  if (!value) return null;
-
-  const trimmed = value.trim();
-  if (/^#([a-f\d]{6})$/i.test(trimmed)) {
-    return trimmed.toUpperCase();
-  }
-
-  const shortHexMatch = trimmed.match(/^#([a-f\d]{3})$/i);
-  if (!shortHexMatch) return null;
-
-  const [, shortHex] = shortHexMatch;
-  return `#${shortHex
-    .split("")
-    .map((char) => `${char}${char}`)
-    .join("")
-    .toUpperCase()}`;
+function SaturationPointer() {
+  return <div className="size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_#0006]" />;
 }
+
+function HuePointer() {
+  return <div className="size-4 -translate-x-1/2 -translate-y-0.5 rounded-full border-2 border-white shadow-[0_0_0_1px_#0006]" />;
+}
+
+// react-color injects hsl/hsv at runtime; its typings only describe `color`.
+type CommonProps = ComponentType<Record<string, unknown>>;
+const SaturationArea = Saturation as unknown as CommonProps;
+const HueSlider = Hue as unknown as CommonProps;
+
+const ColorArea = CustomPicker(function ColorArea(props: InjectedColorProps) {
+  return (
+    <>
+      <div className="relative h-[150px] overflow-hidden rounded-lg">
+        <SaturationArea {...props} pointer={SaturationPointer} />
+      </div>
+      <div className="relative mt-4 h-3 rounded-full [&>div]:rounded-full">
+        <HueSlider {...props} pointer={HuePointer} />
+      </div>
+    </>
+  );
+});
 
 export function ThemeSelector() {
   const { settings, updateSettings } = useWallpaper();
-  const customColor =
-    normalizeHexColor(settings.customBackground) ?? CUSTOM_COLOR_FALLBACK;
-  const [pickerColor, setPickerColor] = useState(customColor);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [before, setBefore] = useState<{ themeId: ThemeId; customBackground?: string } | null>(null);
+  const customColor = settings.customBackground ?? CUSTOM_COLOR_FALLBACK;
+  const [hexDraft, setHexDraft] = useState(customColor);
 
-  useEffect(() => {
-    setPickerColor(customColor);
-  }, [customColor]);
-
-  function selectCustomColor(color: string) {
-    updateSettings({
-      themeId: "custom",
-      customBackground: color,
-    });
+  function setCustom(color: string) {
+    setHexDraft(color.toUpperCase());
+    updateSettings({ themeId: "custom", customBackground: color.toUpperCase() });
   }
 
-  function handleCustomColorChange(color: ColorResult) {
-    const nextColor = color.hex.toUpperCase();
-    setPickerColor(nextColor);
-    updateSettings({
-      themeId: "custom",
-      customBackground: nextColor,
-    });
+  function openPicker() {
+    setBefore({ themeId: settings.themeId, customBackground: settings.customBackground });
+    setCustom(customColor);
+    setPickerOpen(true);
   }
 
-  function handleCustomColorChangeComplete(color: ColorResult) {
-    selectCustomColor(color.hex.toUpperCase());
+  function reset() {
+    if (before) updateSettings(before);
+    setPickerOpen(false);
   }
+
+  const isCustom = settings.themeId === "custom";
 
   return (
-    <Accordion
-      multiple
-      defaultValue={[
-        ...themeGroups.map((group) => group.title),
-        "Custom Color",
-      ]}
-      className="space-y-3">
-      {themeGroups.map((group) => (
-        <AccordionItem
-          key={group.title}
-          value={group.title}
-          className="rounded-xl border border-slate-200 bg-slate-50/60 px-2.5">
-          <AccordionTrigger className="px-1 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 hover:no-underline">
-            {group.title}
-          </AccordionTrigger>
-          <AccordionContent className="pb-2">
-            <div className="grid grid-cols-3 gap-2">
-              {group.options.map((theme) => {
-                const isSelected = settings.themeId === theme.id;
-
-                return (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    onClick={() => updateSettings({ themeId: theme.id })}
-                    className={cn(
-                      "relative overflow-hidden rounded-lg border-2 transition-all",
-                      "hover:border-[#21d4cf]/60",
-                      isSelected
-                        ? "border-[#21d4cf]"
-                        : "border-slate-200 bg-white",
-                    )}>
-                    <div
-                      className="h-16 w-full"
-                      style={{ background: theme.preview }}
-                    />
-
-                    <div className="bg-background px-2 py-1.5">
-                      <div
-                        className={cn(
-                          "truncate text-center text-xs font-medium transition-colors",
-                          isSelected ? "text-[#0f766e]" : "text-slate-700",
-                        )}>
-                        {theme.name}
-                      </div>
-                    </div>
-
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-white shadow-lg" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      ))}
-
-      <AccordionItem
-        value="Custom Color"
-        className="rounded-xl border border-slate-200 bg-slate-50/60 px-2.5">
-        <AccordionTrigger className="px-1 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 hover:no-underline">
-          Custom Color
-        </AccordionTrigger>
-        <AccordionContent className="pb-2">
-          <div
+    <div className="relative">
+      <div className="grid grid-cols-4 gap-2">
+        {THEMES.map((theme) => {
+          const active = settings.themeId === theme.id;
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => {
+                updateSettings({ themeId: theme.id });
+                setPickerOpen(false);
+              }}
+              className="group flex flex-col items-center gap-2 text-xs text-muted-foreground aria-pressed:font-medium aria-pressed:text-foreground"
+            >
+              <span
+                className={cn("h-16 w-full rounded-xl border-2", active ? "border-primary" : "border-border group-hover:border-surface-3")}
+                style={{ background: getThemePreset(theme.id).background }}
+              />
+              {theme.name}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          aria-pressed={isCustom}
+          aria-expanded={pickerOpen}
+          onClick={() => (pickerOpen ? setPickerOpen(false) : openPicker())}
+          className="group flex flex-col items-center gap-2 text-xs text-muted-foreground aria-pressed:font-medium aria-pressed:text-foreground"
+        >
+          <span
             className={cn(
-              "rounded-xl border p-2.5 transition-all",
-              settings.themeId === "custom"
-                ? "border-[#21d4cf] bg-[#ecfeff]"
-                : "border-slate-200 bg-white",
-            )}>
-            <div className="space-y-2.5">
-              <div>
-                <div>
-                  <div className="text-[13px] font-semibold text-slate-900">
-                    Custom Color
-                  </div>
-                  <p className="text-[10px] leading-relaxed text-slate-500">
-                    Pick any solid background color.
-                  </p>
-                </div>
-              </div>
+              "flex h-16 w-full items-center justify-center rounded-xl border-2",
+              isCustom ? "border-primary text-white" : "border-border bg-muted group-hover:border-surface-3",
+            )}
+            style={isCustom ? { background: customColor } : undefined}
+          >
+            {isCustom ? <Pipette aria-hidden="true" className="size-4 drop-shadow" /> : <Plus aria-hidden="true" className="size-5" />}
+          </span>
+          Custom
+        </button>
+      </div>
 
-              <div className="mx-auto w-full max-w-68 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                <SketchPicker
-                  color={pickerColor}
-                  onChange={handleCustomColorChange}
-                  onChangeComplete={handleCustomColorChangeComplete}
-                  presetColors={CUSTOM_SWATCHES}
-                  width="252px"
-                  styles={{
-                    default: {
-                      picker: {
-                        width: "252px",
-                        boxShadow: "none",
-                        borderRadius: "0",
-                        background: "#ffffff",
-                        padding: "10px",
-                        fontFamily: "inherit",
-                      },
-                    },
-                  }}
-                />
-              </div>
-            </div>
+      {pickerOpen ? (
+        <div
+          role="dialog"
+          aria-label="Custom background"
+          className="absolute top-full right-0 z-30 mt-3 w-[284px] rounded-2xl border border-border bg-card p-4 shadow-[0_16px_40px_#00000059] lg:top-[-8px] lg:right-[calc(100%+40px)] lg:mt-0"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold">Custom background</p>
+            <button type="button" onClick={() => setPickerOpen(false)} aria-label="Close" className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+              <X aria-hidden="true" className="size-4" />
+            </button>
           </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+          <ColorArea color={customColor} onChange={(color) => setCustom(color.hex)} />
+          <label className="mt-4 flex h-9 items-center gap-2 rounded-lg bg-muted px-2.5 focus-within:ring-2 focus-within:ring-primary">
+            <span aria-hidden="true" className="size-4 shrink-0 rounded" style={{ background: customColor }} />
+            <span className="sr-only">Hex colour</span>
+            <input
+              value={hexDraft}
+              onChange={(event) => {
+                const value = event.target.value.toUpperCase();
+                setHexDraft(value);
+                if (/^#[0-9A-F]{6}$/.test(value)) setCustom(value);
+              }}
+              className="w-full bg-transparent font-mono text-[13px] outline-none"
+            />
+          </label>
+          <p className="mt-4 text-xs text-muted-foreground">Swatches</p>
+          <div className="mt-2 flex justify-between">
+            {SWATCHES.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                onClick={() => setCustom(hex)}
+                aria-label={`Use ${hex}`}
+                aria-pressed={customColor.toUpperCase() === hex}
+                className="size-6 rounded-md border border-border ring-offset-2 ring-offset-card aria-pressed:ring-2 aria-pressed:ring-foreground"
+                style={{ background: hex }}
+              />
+            ))}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button type="button" onClick={reset} className="h-9 rounded-lg bg-surface-3 text-sm hover:opacity-90">Reset</button>
+            <button type="button" onClick={() => setPickerOpen(false)} className="h-9 rounded-lg bg-primary text-sm font-medium text-primary-foreground hover:opacity-90">Apply</button>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }

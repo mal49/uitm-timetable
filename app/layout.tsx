@@ -1,14 +1,34 @@
 import type { Metadata, Viewport } from "next";
-import { Roboto } from "next/font/google";
+import { Bricolage_Grotesque, Fraunces, Inter, Playfair_Display } from "next/font/google";
 import { VercelAnalytics } from "@/components/vercel-analytics";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const roboto = Roboto({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "700", "900"],
   display: "swap",
-  variable: "--font-roboto",
+  variable: "--font-inter",
+});
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-bricolage",
+});
+
+// Serif faces for the wallpaper styles; not preloaded since only the Wallpaper step uses them.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  variable: "--font-fraunces",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  variable: "--font-playfair",
 });
 
 export const metadata: Metadata = {
@@ -57,7 +77,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${roboto.variable} ${roboto.className}`}
+      className={`${inter.variable} ${bricolage.variable} ${fraunces.variable} ${playfair.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased font-sans">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
